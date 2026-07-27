@@ -1,0 +1,38 @@
+<div class="ambient" aria-hidden="true"><span class="orb orb-a"></span><span class="orb orb-b"></span><span class="scanline"></span></div>
+<div id="cursor-glow" aria-hidden="true"></div>
+<script is:inline>
+	const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+	document.querySelectorAll('.reveal').forEach((el) => {
+		if (reduceMotion) return el.classList.add('in-view');
+		new IntersectionObserver(([entry], observer) => {
+			if (entry.isIntersecting) { entry.target.classList.add('in-view'); observer.disconnect(); }
+		}, { threshold: .12 }).observe(el);
+	});
+	if (!reduceMotion && matchMedia('(pointer: fine)').matches) {
+		const glow = document.getElementById('cursor-glow');
+		window.addEventListener('pointermove', (event) => {
+			glow?.style.setProperty('--x', `${event.clientX}px`);
+			glow?.style.setProperty('--y', `${event.clientY}px`);
+		});
+		document.querySelectorAll('[data-tilt]').forEach((card) => {
+			card.addEventListener('pointermove', (event) => {
+				const rect = card.getBoundingClientRect();
+				const rx = ((event.clientY - rect.top) / rect.height - .5) * -8;
+				const ry = ((event.clientX - rect.left) / rect.width - .5) * 8;
+				card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+			});
+			card.addEventListener('pointerleave', () => card.style.transform = '');
+		});
+	}
+</script>
+<style>
+	.ambient { position: fixed; inset: 0; z-index: -3; overflow: hidden; pointer-events: none; }
+	.orb { position: absolute; width: 38vw; aspect-ratio: 1; border-radius: 50%; opacity: .13; filter: blur(100px); animation: drift 13s ease-in-out infinite alternate; }
+	.orb-a { top: -18vw; right: -6vw; background: var(--cyan); }
+	.orb-b { bottom: -24vw; left: -12vw; background: var(--hot); animation-delay: -5s; }
+	.scanline { position: absolute; top: -20%; right: 0; left: 0; height: 18%; background: linear-gradient(transparent, rgba(200,255,49,.035), transparent); animation: scan 8s linear infinite; }
+	#cursor-glow { position: fixed; z-index: 40; top: 0; left: 0; width: 420px; height: 420px; pointer-events: none; background: radial-gradient(circle, rgba(200,255,49,.09), transparent 65%); transform: translate(calc(var(--x, -500px) - 50%), calc(var(--y, -500px) - 50%)); mix-blend-mode: screen; }
+	@keyframes drift { to { transform: translate(8vw, 10vh) scale(1.15); } }
+	@keyframes scan { to { transform: translateY(700%); } }
+	@media (pointer: coarse) { #cursor-glow { display: none; } }
+</style>

@@ -1,0 +1,47 @@
+---
+import { AUTHOR_GITHUB, SITE_TITLE } from '../consts';
+import HeaderLink from './HeaderLink.astro';
+---
+
+<header class="site-header">
+	<nav aria-label="主导航">
+		<a class="brand" href="/" aria-label={`${SITE_TITLE}首页`}>
+			<span class="brand-mark" aria-hidden="true">未</span>
+			<span>{SITE_TITLE}</span>
+		</a>
+		<div class="nav-links">
+			<HeaderLink href="/">首页</HeaderLink>
+			<HeaderLink href="/blog">文章</HeaderLink>
+			<HeaderLink href="/about">关于</HeaderLink>
+			<a href={AUTHOR_GITHUB} target="_blank" rel="noreferrer">GitHub ↗</a>
+			<a href="/rss.xml">RSS</a>
+			<button id="theme-toggle" type="button" aria-label="切换明暗模式"><span>◐</span></button>
+		</div>
+	</nav>
+</header>
+
+<script is:inline>
+	const button = document.getElementById('theme-toggle');
+	const saved = localStorage.getItem('theme');
+	if (saved === 'light') document.body.classList.add('light');
+	button?.addEventListener('click', () => {
+		document.body.classList.toggle('light');
+		localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+	});
+</script>
+
+<style>
+	.site-header { position: sticky; z-index: 30; top: 0; border-bottom: 1px solid var(--line); background: rgba(7,8,8,.62); backdrop-filter: blur(20px) saturate(140%); }
+	:global(body.light) .site-header { background: rgba(238,241,233,.72); }
+	nav { width: min(1180px, calc(100% - 48px)); min-height: 78px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+	.brand { display: flex; align-items: center; gap: .8rem; font-family: var(--display); font-size: .96rem; font-weight: 900; text-decoration: none; letter-spacing: .08em; }
+	.brand-mark { position: relative; display: grid; place-items: center; width: 36px; height: 36px; color: #080a08; background: var(--acid); font-size: .82rem; clip-path: polygon(0 0, 78% 0, 100% 22%, 100% 100%, 22% 100%, 0 78%); box-shadow: 0 0 24px rgba(200,255,49,.3); }
+	.nav-links { display: flex; align-items: center; gap: 1.7rem; }
+	.nav-links :global(a) { position: relative; padding: 1.7rem 0; color: var(--muted); text-decoration: none; font-family: monospace; font-size: .75rem; letter-spacing: .05em; text-transform: uppercase; }
+	.nav-links :global(a:hover), .nav-links :global(a.active) { color: var(--ink); }
+	.nav-links :global(a.active)::after { content: ""; position: absolute; right: 0; bottom: 1.15rem; left: 0; border-top: 2px solid var(--acid); box-shadow: 0 0 10px var(--acid); }
+	button { position: relative; width: 35px; height: 35px; padding: 0; overflow: hidden; color: var(--ink); background: transparent; border: 1px solid var(--line); cursor: pointer; transition: color .2s ease, border-color .2s ease, transform .2s ease; }
+	button:hover { color: var(--acid); border-color: var(--acid); transform: rotate(90deg); }
+	button span { display: block; }
+	@media (max-width: 620px) { nav { width: calc(100% - 28px); min-height: 70px; } .brand > span:last-child, .nav-links :global(a[href="/rss.xml"]) { display: none; } .nav-links { gap: 1.1rem; } .nav-links :global(a) { padding: 1.4rem 0; } }
+</style>

@@ -1,0 +1,28 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { AUTHOR_BIO, AUTHOR_GITHUB, AUTHOR_NAME, SITE_TITLE } from '../consts';
+---
+<!doctype html><html lang="zh-CN"><head><BaseHead title={`关于 · ${SITE_TITLE}`} description={AUTHOR_BIO} /></head>
+<body><Header /><main><article class="about reveal">
+	<div class="about-aside"><span class="eyebrow">About</span><div class="portrait" aria-hidden="true"><span>{AUTHOR_NAME.slice(0, 1)}</span></div><small>这里可以替换为你的照片</small></div>
+	<div class="about-copy"><h1>你好，我是<br /><em>{AUTHOR_NAME}</em>。</h1><p class="lead">{AUTHOR_BIO}</p><p>这个博客是我的长期数字花园。我在这里整理学到的知识、做过的项目，以及那些值得慢慢想一想的问题。</p><p>你可以从文章归档开始阅读。如果某篇文字让你产生了新的想法，它就已经完成了自己的使命。</p><div class="about-actions"><a class="button-link" href="/blog">开始阅读 →</a><a class="github-link" href={AUTHOR_GITHUB} target="_blank" rel="noreferrer">GitHub / redheadfeather ↗</a></div></div>
+</article></main><Footer /></body></html>
+<style>
+	.about { display: grid; grid-template-columns: .75fr 1.4fr; gap: 10vw; padding: 7rem 0 2rem; }
+	.portrait { position: relative; display: grid; place-items: center; aspect-ratio: 3 / 4; margin-top: 1rem; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(135deg, rgba(54,231,255,.12), transparent 50%), var(--surface); }
+	.portrait::before { content: ""; position: absolute; inset: -50%; background: conic-gradient(transparent, var(--acid), transparent 18%); animation: portrait-scan 6s linear infinite; }
+	.portrait::after { content: "IDENTITY / PENDING"; position: absolute; right: 1rem; bottom: 1rem; color: var(--muted); font: .55rem monospace; letter-spacing: .12em; }
+	.portrait span { position: relative; z-index: 1; display: grid; place-items: center; width: 130px; height: 130px; color: #070807; background: var(--acid); font-family: var(--display); font-size: 3.5rem; clip-path: polygon(50% 0, 100% 25%, 88% 88%, 25% 100%, 0 45%); box-shadow: 0 0 50px rgba(200,255,49,.3); }
+	.about-aside small { display: block; margin-top: .75rem; color: var(--muted); text-align: center; font-size: .7rem; }
+	.about-copy h1 { margin: 1rem 0 2rem; font-size: clamp(3.8rem, 8vw, 7.5rem); line-height: .9; text-transform: uppercase; }
+	.about-copy h1 em { color: var(--acid); font-family: var(--serif); font-weight: 400; text-shadow: 0 0 35px rgba(200,255,49,.2); }
+	.about-copy p { max-width: 650px; color: var(--muted); }
+	.about-copy .lead { color: var(--ink); font-family: var(--serif); font-size: 1.4rem; border-left: 2px solid var(--cyan); padding-left: 1.2rem; }
+	.about-copy .button-link { margin-top: 1rem; }
+	.about-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 1.5rem; margin-top: 1rem; }
+	.github-link { color: var(--cyan); font: .72rem monospace; letter-spacing: .06em; text-decoration: none; }
+	@keyframes portrait-scan { to { transform: rotate(360deg); } }
+	@media (max-width: 760px) { .about { grid-template-columns: 1fr; gap: 3rem; padding: 4rem 0; } .about-aside { max-width: 280px; } }
+</style>

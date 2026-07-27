@@ -1,0 +1,24 @@
+---
+import { AUTHOR_GITHUB, AUTHOR_NAME, SITE_TITLE } from '../consts';
+import MotionEffects from './MotionEffects.astro';
+const today = new Date();
+---
+
+<MotionEffects />
+<footer>
+	<div class="footer-inner">
+		<p class="footer-title">把日子过成可回看的文字。</p>
+		<div class="footer-meta">
+			<span>© {today.getFullYear()} {AUTHOR_NAME}</span>
+			<span><a href={AUTHOR_GITHUB} target="_blank" rel="noreferrer">GitHub ↗</a> · {SITE_TITLE} · Built with Astro</span>
+		</div>
+	</div>
+</footer>
+<style>
+	footer { position: relative; margin-top: 7rem; border-top: 1px solid var(--line); background: rgba(7,8,8,.55); backdrop-filter: blur(18px); }
+	.footer-inner { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 3.5rem 0; }
+	.footer-title { margin: 0 0 3rem; color: var(--acid); font-family: var(--display); font-size: clamp(1.5rem, 3vw, 2.8rem); letter-spacing: -.05em; text-transform: uppercase; }
+	.footer-meta { display: flex; justify-content: space-between; gap: 1rem; color: var(--muted); font-size: .76rem; letter-spacing: .05em; }
+	.footer-meta a { color: var(--acid); text-decoration: none; }
+	@media (max-width: 620px) { .footer-meta { flex-direction: column; } }
+</style>
