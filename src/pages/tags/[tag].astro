@@ -1,0 +1,73 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+import { getTagPath, toTagSlug } from '../../utils/tags';
+
+export async function getStaticPaths() {
+	const posts = await getCollection('blog');
+	const tags = [...new Set(posts.flatMap((post) => post.data.tags))];
+	return tags.map((tag) => ({
+		params: { tag: toTagSlug(tag) },
+		props: {
+			tag,
+			posts: posts.filter((post) => post.data.tags.includes(tag)).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()),
+		},
+	}));
+}
+
+interface Props {
+	tag: string;
+	posts: CollectionEntry<'blog'>[];
+}
+
+const { tag, posts } = Astro.props;
+---
+<!doctype html>
+<html lang="zh-CN">
+	<head><BaseHead title={`#${tag} · ${SITE_TITLE}`} description={`浏览 ${posts.length} 篇带有“${tag}”Tag 的文章`} /></head>
+	<body><Header /><main>
+		<header class="tag-head reveal">
+			<a href="/tags/">← ALL TAGS</a>
+			<span class="eyebrow">Filtered frequency</span>
+			<h1>#{tag}</h1>
+			<p><strong>{String(posts.length).padStart(2, '0')}</strong> 篇文章连接到这个坐标。</p>
+		</header>
+		<section class="post-list" aria-label={`Tag ${tag} 下的文章`}>
+			{posts.map((post, index) => (
+				<article>
+					<span class="index">{String(index + 1).padStart(2, '0')}</span>
+					<div class="date"><FormattedDate date={post.data.pubDate} /></div>
+					<a class="title" href={`/blog/${post.id}/`}><h2>{post.data.title}</h2><p>{post.data.description}</p></a>
+					<div class="other-tags">{post.data.tags.filter((item) => item !== tag).map((item) => <a href={getTagPath(item)}>#{item}</a>)}</div>
+					<a class="arrow" href={`/blog/${post.id}/`} aria-label={`阅读《${post.data.title}》`}>↗</a>
+				</article>
+			))}
+		</section>
+		<a class="search-link button-link" href="/blog/#tags">搜索全部文章 <span>→</span></a>
+	</main><Footer /></body>
+</html>
+<style>
+	.tag-head { position: relative; padding: 6rem 0 4rem; border-bottom: 1px solid var(--line); }
+	.tag-head > a { display: block; margin-bottom: 3rem; color: var(--muted); font: .65rem monospace; letter-spacing: .12em; text-decoration: none; }
+	.tag-head > a:hover { color: var(--acid); }
+	.tag-head h1 { max-width: 1000px; margin: .2rem 0 1.5rem; color: var(--ink); font-size: clamp(4rem, 12vw, 10rem); overflow-wrap: anywhere; }
+	.tag-head > p:last-child { color: var(--muted); font: .75rem monospace; letter-spacing: .08em; }
+	.tag-head strong { margin-right: .5rem; color: var(--acid); font-size: 1.2rem; }
+	.post-list article { position: relative; display: grid; grid-template-columns: 50px 120px 1fr minmax(100px, auto) 40px; align-items: center; gap: 1rem; padding: 2rem 1rem; border-bottom: 1px solid var(--line); transition: background .25s ease, transform .25s ease; }
+	.post-list article:hover { z-index: 1; background: var(--surface); transform: translateX(8px); }
+	.index, .date { color: var(--muted); font: .62rem monospace; letter-spacing: .08em; }
+	.index { color: var(--acid); }
+	.title { text-decoration: none; }
+	.title h2 { margin: 0 0 .6rem; font-size: clamp(1.5rem, 3vw, 2.4rem); }
+	.title p { margin: 0; color: var(--muted); font-size: .78rem; }
+	.other-tags { display: flex; flex-wrap: wrap; gap: .5rem; }
+	.other-tags a { color: var(--cyan); font: .62rem monospace; text-decoration: none; }
+	.arrow { color: var(--cyan); font-size: 1.3rem; text-decoration: none; }
+	.search-link { margin: 4rem 0 1rem; }
+	@media (max-width: 760px) { .tag-head { padding-top: 4rem; } .post-list article { grid-template-columns: 35px 1fr 30px; padding: 1.5rem .4rem; } .date { grid-column: 2; grid-row: 1; } .title { grid-column: 2; grid-row: 2; } .index { grid-row: 1 / 3; align-self: start; } .arrow { grid-column: 3; grid-row: 1 / 3; } .other-tags { display: none; } }
+</style>

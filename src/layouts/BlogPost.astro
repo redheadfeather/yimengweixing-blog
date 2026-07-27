@@ -5,6 +5,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import { getTagPath } from '../utils/tags';
 type Props = CollectionEntry<'blog'>['data'];
 const { title, description, pubDate, updatedDate, heroImage, tags } = Astro.props;
 ---
@@ -13,7 +14,10 @@ const { title, description, pubDate, updatedDate, heroImage, tags } = Astro.prop
 	<body><Header /><main><article>
 		<header class="post-head reveal">
 			<a class="back" href="/blog">← 返回文章</a>
-			<div class="post-meta"><FormattedDate date={pubDate} /><span>·</span><span>{tags.join(' / ')}</span></div>
+			<div class="post-meta">
+				<FormattedDate date={pubDate} /><span>·</span>
+				<div class="post-tags">{tags.map((tag) => <a href={getTagPath(tag)}>#{tag}</a>)}</div>
+			</div>
 			<h1>{title}</h1><p>{description}</p>
 			{updatedDate && <small>更新于 <FormattedDate date={updatedDate} /></small>}
 		</header>
@@ -27,6 +31,9 @@ const { title, description, pubDate, updatedDate, heroImage, tags } = Astro.prop
 	.back { display: inline-block; margin-bottom: 4rem; color: var(--muted); font: .7rem monospace; letter-spacing: .08em; text-decoration: none; transition: color .2s ease, transform .2s ease; }
 	.back:hover { color: var(--acid); transform: translateX(-5px); }
 	.post-meta { display: flex; gap: .65rem; margin-bottom: 1.5rem; color: var(--acid); font: .7rem monospace; letter-spacing: .08em; }
+	.post-tags { display: flex; flex-wrap: wrap; gap: .4rem .75rem; }
+	.post-tags a { color: var(--cyan); text-decoration: none; transition: color .2s ease; }
+	.post-tags a:hover { color: var(--acid); text-decoration: underline; text-underline-offset: 4px; }
 	.post-head h1 { margin: 0 0 1.5rem; font-size: clamp(3.4rem, 8vw, 7rem); text-wrap: balance; }
 	.post-head > p { max-width: 650px; color: var(--muted); font-family: var(--serif); font-size: 1.2rem; }
 	.post-head small { color: var(--muted); font-size: .7rem; }

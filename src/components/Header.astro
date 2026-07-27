@@ -12,6 +12,7 @@ import HeaderLink from './HeaderLink.astro';
 		<div class="nav-links">
 			<HeaderLink href="/">首页</HeaderLink>
 			<HeaderLink href="/blog">文章</HeaderLink>
+			<HeaderLink href="/tags">标签</HeaderLink>
 			<HeaderLink href="/about">关于</HeaderLink>
 			<a href={AUTHOR_GITHUB} target="_blank" rel="noreferrer">GitHub ↗</a>
 			<a href="/rss.xml">RSS</a>
@@ -43,5 +44,5 @@ import HeaderLink from './HeaderLink.astro';
 	button { position: relative; width: 35px; height: 35px; padding: 0; overflow: hidden; color: var(--ink); background: transparent; border: 1px solid var(--line); cursor: pointer; transition: color .2s ease, border-color .2s ease, transform .2s ease; }
 	button:hover { color: var(--acid); border-color: var(--acid); transform: rotate(90deg); }
 	button span { display: block; }
-	@media (max-width: 620px) { nav { width: calc(100% - 28px); min-height: 70px; } .brand > span:last-child, .nav-links :global(a[href="/rss.xml"]) { display: none; } .nav-links { gap: 1.1rem; } .nav-links :global(a) { padding: 1.4rem 0; } }
+	@media (max-width: 720px) { nav { width: calc(100% - 28px); min-height: 70px; } .brand > span:last-child, .nav-links :global(a[href="/rss.xml"]), .nav-links > a[target="_blank"] { display: none; } .nav-links { gap: 1.1rem; } .nav-links :global(a) { padding: 1.4rem 0; } }
 </style>

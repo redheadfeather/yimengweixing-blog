@@ -5,43 +5,141 @@ import Footer from '../../components/Footer.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
 import { SITE_TITLE } from '../../consts';
+import { getTagPath } from '../../utils/tags';
+
 const posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const tagCounts = new Map<string, number>();
+posts.forEach((post) => post.data.tags.forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1)));
+const tags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN'));
 ---
 <!doctype html>
 <html lang="zh-CN">
-	<head><BaseHead title={`文章 · ${SITE_TITLE}`} description="所有文章与随笔" /></head>
+	<head><BaseHead title={`文章 · ${SITE_TITLE}`} description="搜索文章，或按 Tag 浏览所有文章与随笔" /></head>
 	<body><Header /><main>
-		<header class="archive-head reveal"><span class="eyebrow">Writing archive</span><h1>所有文章</h1><p>一些不急着得出结论的记录。关于技术、创造，也关于普通生活。</p></header>
-		<section class="archive-grid reveal delay-1">
-			{posts.map((post, index) => <article>
-				<a href={`/blog/${post.id}/`}>
-					<div class="card-top"><span>{String(index + 1).padStart(2, '0')}</span><FormattedDate date={post.data.pubDate} /></div>
-					<h2>{post.data.title}</h2><p>{post.data.description}</p>
-					<div class="tags">{post.data.tags.map(tag => <span>#{tag}</span>)}</div>
-				</a>
-			</article>)}
+		<header class="archive-head reveal">
+			<span class="eyebrow">Writing archive / signal search</span>
+			<h1>所有文章</h1>
+			<p>从标题、摘要和 Tag 中捕捉信号，也可以沿着某个主题继续探索。</p>
+		</header>
+
+		<section class="search-console reveal delay-1" aria-labelledby="search-title">
+			<div class="console-head">
+				<div><span class="status-dot"></span><span id="search-title">ARTICLE_QUERY.exe</span></div>
+				<a href="/tags/">浏览 Tag 图谱 ↗</a>
+			</div>
+			<label class="search-box" for="article-search">
+				<span aria-hidden="true">⌕</span>
+				<span class="sr-only">搜索文章</span>
+				<input id="article-search" type="search" placeholder="搜索标题、摘要或 Tag…" autocomplete="off" />
+				<kbd>LIVE</kbd>
+			</label>
+			<div class="filter-row" id="tags">
+				<span class="filter-label">FILTER //</span>
+				<button type="button" class="tag-filter active" data-tag="*" aria-pressed="true">全部 <small>{posts.length}</small></button>
+				{tags.map(([tag, count]) => (
+					<button type="button" class="tag-filter" data-tag={tag} aria-pressed="false">#{tag} <small>{count}</small></button>
+				))}
+			</div>
+			<div class="query-status"><span id="result-count" aria-live="polite">已锁定 {posts.length} 篇文章</span><span aria-hidden="true">SYS.READY</span></div>
 		</section>
+
+		<section class="archive-grid" id="article-grid" aria-label="文章列表">
+			{posts.map((post, index) => (
+				<article data-search={`${post.data.title} ${post.data.description} ${post.data.tags.join(' ')}`.toLocaleLowerCase('zh-CN')} data-tags={JSON.stringify(post.data.tags)}>
+					<div class="card-top"><span>{String(index + 1).padStart(2, '0')}</span><FormattedDate date={post.data.pubDate} /></div>
+					<a class="article-link" href={`/blog/${post.id}/`}><h2>{post.data.title}</h2><p>{post.data.description}</p></a>
+					<div class="card-bottom">
+						<div class="card-tags">{post.data.tags.map((tag) => <a href={getTagPath(tag)}>#{tag}</a>)}</div>
+						<a class="read-link" href={`/blog/${post.id}/`} aria-label={`阅读《${post.data.title}》`}>READ ↗</a>
+					</div>
+				</article>
+			))}
+		</section>
+		<div class="empty-state" id="empty-state" hidden><span>NO_SIGNAL</span><h2>没有捕捉到匹配文章</h2><p>换个关键词，或者切回“全部”试试。</p></div>
 	</main><Footer /></body>
 </html>
+
+<script>
+	const input = document.querySelector<HTMLInputElement>('#article-search');
+	const buttons = [...document.querySelectorAll<HTMLButtonElement>('.tag-filter')];
+	const cards = [...document.querySelectorAll<HTMLElement>('#article-grid article')];
+	const resultCount = document.querySelector<HTMLElement>('#result-count');
+	const emptyState = document.querySelector<HTMLElement>('#empty-state');
+	let selectedTag = '*';
+
+	function updateResults() {
+		const query = input?.value.trim().toLocaleLowerCase('zh-CN') ?? '';
+		let visible = 0;
+		cards.forEach((card) => {
+			const cardTags = JSON.parse(card.dataset.tags ?? '[]') as string[];
+			const matchesTag = selectedTag === '*' || cardTags.includes(selectedTag);
+			const matchesQuery = !query || (card.dataset.search ?? '').includes(query);
+			card.hidden = !(matchesTag && matchesQuery);
+			if (!card.hidden) visible += 1;
+		});
+		if (resultCount) resultCount.textContent = `已锁定 ${visible} 篇文章`;
+		if (emptyState) emptyState.hidden = visible !== 0;
+	}
+
+	input?.addEventListener('input', updateResults);
+	buttons.forEach((button) => button.addEventListener('click', () => {
+		selectedTag = button.dataset.tag ?? '*';
+		buttons.forEach((item) => {
+			const active = item === button;
+			item.classList.toggle('active', active);
+			item.setAttribute('aria-pressed', String(active));
+		});
+		updateResults();
+	}));
+</script>
+
 <style>
-	.archive-head { position: relative; max-width: 900px; padding: 7rem 0 5rem; }
+	.archive-head { position: relative; max-width: 900px; padding: 7rem 0 4rem; }
 	.archive-head::after { content: "ARCHIVE"; position: absolute; top: 3rem; right: -24vw; z-index: -1; color: transparent; -webkit-text-stroke: 1px var(--line); font-family: var(--display); font-size: clamp(7rem, 18vw, 18rem); line-height: 1; pointer-events: none; animation: breathe 5s ease-in-out infinite alternate; }
 	.archive-head h1 { margin: 0 0 1.5rem; color: var(--ink); font-size: clamp(4.2rem, 10vw, 9rem); text-transform: uppercase; }
-	.archive-head p { color: var(--muted); font-size: 1.05rem; }
+	.archive-head p { max-width: 650px; color: var(--muted); font-size: 1.05rem; }
+	.search-console { margin-bottom: 4rem; border: 1px solid var(--line); background: linear-gradient(135deg, rgba(54,231,255,.055), transparent 55%), var(--surface); box-shadow: 0 18px 80px rgba(0,0,0,.18); }
+	.console-head, .query-status { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 1rem; color: var(--muted); border-bottom: 1px solid var(--line); font: .65rem ui-monospace, monospace; letter-spacing: .12em; }
+	.console-head > div { display: flex; align-items: center; gap: .65rem; }
+	.console-head a { color: var(--cyan); text-decoration: none; }
+	.status-dot { width: 7px; height: 7px; background: var(--acid); border-radius: 50%; box-shadow: 0 0 12px var(--acid); animation: pulse 1.8s ease-in-out infinite; }
+	.search-box { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1rem; padding: 1.2rem 1.35rem; border-bottom: 1px solid var(--line); }
+	.search-box > span:first-child { color: var(--acid); font-size: 1.7rem; line-height: 1; }
+	.search-box input { min-width: 0; padding: 0; color: var(--ink); background: transparent; border: 0; outline: 0; font: 800 clamp(1rem, 2vw, 1.3rem) var(--sans); }
+	.search-box input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
+	.search-box:focus-within { box-shadow: inset 3px 0 var(--acid), 0 0 30px rgba(200,255,49,.06); }
+	kbd { padding: .2rem .45rem; color: var(--acid); background: transparent; border: 1px solid var(--line); font: .55rem monospace; letter-spacing: .12em; }
+	.filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; padding: 1rem 1.35rem; }
+	.filter-label { margin-right: .35rem; color: var(--muted); font: .62rem monospace; letter-spacing: .12em; }
+	.tag-filter { padding: .48rem .7rem; color: var(--muted); background: transparent; border: 1px solid var(--line); cursor: pointer; font: .68rem ui-monospace, monospace; transition: color .2s ease, border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease; }
+	.tag-filter small { margin-left: .35rem; opacity: .65; }
+	.tag-filter:hover { color: var(--ink); border-color: var(--cyan); transform: translateY(-2px); }
+	.tag-filter.active { color: #080a08; background: var(--acid); border-color: var(--acid); box-shadow: 0 0 20px rgba(200,255,49,.18); }
+	.query-status { border-top: 1px solid var(--line); border-bottom: 0; }
+	.query-status > span:first-child { color: var(--ink); }
+	.query-status > span:last-child { color: var(--acid); }
 	.archive-grid { display: grid; grid-template-columns: repeat(2, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
-	article { position: relative; overflow: hidden; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-	article::before { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 35%, rgba(54,231,255,.1)); opacity: 0; transform: scale(1.2); transition: opacity .35s ease, transform .5s ease; }
-	article a { position: relative; z-index: 1; display: flex; min-height: 350px; flex-direction: column; padding: 2rem; text-decoration: none; transition: transform .35s ease, background .35s ease; }
+	article { position: relative; display: flex; min-height: 350px; flex-direction: column; padding: 2rem; overflow: hidden; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); transition: transform .35s ease, box-shadow .35s ease; }
+	article[hidden] { display: none; }
+	article::before { content: ""; position: absolute; inset: 0; z-index: 0; background: linear-gradient(135deg, transparent 35%, rgba(54,231,255,.1)); opacity: 0; transform: scale(1.2); transition: opacity .35s ease, transform .5s ease; pointer-events: none; }
+	article > * { position: relative; z-index: 1; }
+	article:hover { transform: translateY(-7px); box-shadow: inset 0 -3px var(--acid); }
 	article:hover::before { opacity: 1; transform: scale(1); }
-	article:hover a { transform: translateY(-7px); }
-	article:nth-child(3n + 1):hover { box-shadow: inset 0 -3px var(--acid); }
-	article:nth-child(3n + 2):hover { box-shadow: inset 0 -3px var(--cyan); }
-	article:nth-child(3n + 3):hover { box-shadow: inset 0 -3px var(--hot); }
 	.card-top { display: flex; justify-content: space-between; color: var(--muted); font: .67rem monospace; letter-spacing: .08em; }
 	.card-top span:first-child { color: var(--acid); }
-	article h2 { margin: auto 0 1rem; font-size: clamp(1.8rem, 3.5vw, 2.8rem); }
-	article p { color: var(--muted); font-size: .84rem; }
-	.tags { display: flex; gap: .8rem; color: var(--cyan); font: .67rem monospace; }
+	.article-link { display: flex; flex: 1; flex-direction: column; justify-content: flex-end; padding: 3rem 0 1.6rem; text-decoration: none; }
+	article h2 { margin: 0 0 1rem; font-size: clamp(1.8rem, 3.5vw, 2.8rem); }
+	article p { margin: 0; color: var(--muted); font-size: .84rem; }
+	.card-bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+	.card-tags { display: flex; flex-wrap: wrap; gap: .5rem .8rem; }
+	.card-tags a { color: var(--cyan); font: .67rem monospace; text-decoration: none; }
+	.card-tags a:hover { color: var(--acid); text-decoration: underline; text-underline-offset: 4px; }
+	.read-link { flex: none; color: var(--muted); font: .6rem monospace; letter-spacing: .08em; text-decoration: none; }
+	.empty-state { padding: 6rem 1rem; text-align: center; border: 1px solid var(--line); }
+	.empty-state span { color: var(--hot); font: .65rem monospace; letter-spacing: .18em; }
+	.empty-state h2 { margin: 1rem 0 .7rem; font-size: clamp(2rem, 5vw, 4rem); }
+	.empty-state p { color: var(--muted); }
 	@keyframes breathe { to { opacity: .35; transform: translateX(-2vw); } }
-	@media (max-width: 700px) { .archive-head { padding: 4rem 0 3rem; } .archive-grid { grid-template-columns: 1fr; } article a { min-height: 270px; } }
+	@keyframes pulse { 50% { opacity: .35; transform: scale(.7); } }
+	@media (max-width: 700px) { .archive-head { padding: 4rem 0 3rem; } .console-head a { display: none; } .search-box { padding-inline: 1rem; } .filter-row { padding-inline: 1rem; } .archive-grid { grid-template-columns: 1fr; } article { min-height: 290px; padding: 1.4rem; } }
 </style>
