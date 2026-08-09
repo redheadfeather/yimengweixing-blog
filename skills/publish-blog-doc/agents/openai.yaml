@@ -1,0 +1,4 @@
+interface:
+  display_name: "发布技术文档到博客"
+  short_description: "自动补充标题、日期、描述与标签，并发布技术文档到个人博客"
+  default_prompt: "使用 $publish-blog-doc 将当前技术文档发布到我的个人博客。"
