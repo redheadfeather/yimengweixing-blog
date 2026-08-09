@@ -56,6 +56,20 @@ def strip_frontmatter(text: str) -> str:
     return normalized[4 + closing.end() :].lstrip("\n")
 
 
+def strip_matching_leading_h1(text: str, title: str) -> str:
+    lines = text.splitlines()
+    first_content = next((index for index, line in enumerate(lines) if line.strip()), None)
+    if first_content is None:
+        return text
+    match = re.fullmatch(r"#\s+(.+?)\s*", lines[first_content])
+    if not match or match.group(1).strip() != title.strip():
+        return text
+    del lines[first_content]
+    while first_content < len(lines) and not lines[first_content].strip():
+        del lines[first_content]
+    return "\n".join(lines)
+
+
 def slugify(value: str) -> str:
     value = unicodedata.normalize("NFKC", value).strip().lower()
     value = re.sub(r"[\s_]+", "-", value)
@@ -142,7 +156,8 @@ def main() -> None:
     if overwrite_warning and not args.dry_run:
         fail(f"destination already exists; review it before using --force: {destination}")
 
-    body = strip_frontmatter(source.read_text(encoding="utf-8-sig")).rstrip() + "\n"
+    body = strip_frontmatter(source.read_text(encoding="utf-8-sig"))
+    body = strip_matching_leading_h1(body, args.title).rstrip() + "\n"
     output = f"{build_frontmatter(args)}\n\n{body}"
     print(f"SOURCE: {source}")
     print(f"DESTINATION: {destination}")

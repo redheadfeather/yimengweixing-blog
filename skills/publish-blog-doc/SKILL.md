@@ -44,6 +44,7 @@ Turn a local Markdown technical document into a validated blog post and publish 
    ```
 
    - Let the script generate the filename unless a stable slug is important; then pass `--slug`.
+   - The script removes a leading Markdown H1 when it matches the generated title, because the blog layout already renders that title.
    - The script refuses to overwrite an existing article. Use `--force` only when the user explicitly asks to update that article and the diff has been reviewed.
    - Use `--dry-run` when metadata or the destination is uncertain.
 
