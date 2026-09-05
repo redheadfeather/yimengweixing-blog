@@ -1,0 +1,63 @@
+---
+const themes = [
+ ['paper','纸上','Paper','像翻阅一本安静的技术杂志。','#f7f3eb','#a04431'],
+ ['studio','极简','Studio','清晰的网格，留白里的秩序。','#f8fafc','#2855b7'],
+ ['orbit','深空','Orbit','深蓝夜空，微光中的思考。','#101b30','#87c9ee'],
+ ['console','终端','Console','开发者的私人工作台。','#161918','#e6b76c'],
+ ['moss','暖野','Moss','温柔的绿意，让文字慢慢生长。','#f3f3e8','#486541'],
+];
+---
+<details class="theme-picker">
+ <summary aria-label="选择主题风格">◐ <span id="theme-label">纸上</span></summary>
+ <div class="theme-panel">
+  <div class="theme-panel-heading"><strong>换一种阅读心情</strong><span>五种风格，即刻切换</span></div>
+  <div class="theme-options" role="group" aria-label="主题风格">
+   {themes.map(([id,name,english,description,bg,accent]) => <button type="button" data-theme-choice={id} aria-pressed={id === 'paper'}>
+    <span class="theme-preview" style={`--preview-bg:${bg};--preview-accent:${accent}`} aria-hidden="true"><b>Aa</b><i></i><i></i></span>
+    <span><strong>{name} <small>{english}</small></strong><span class="theme-description">{description}</span></span><span class="theme-check" aria-hidden="true">✓</span>
+   </button>)}
+  </div>
+  <p class="theme-feedback" aria-live="polite">偏好保存在当前浏览器</p>
+ </div>
+</details>
+<script>
+ const picker = document.querySelector<HTMLDetailsElement>('.theme-picker')!;
+ const choices = [...picker.querySelectorAll<HTMLButtonElement>('[data-theme-choice]')];
+ function sync() {
+  const t = document.documentElement.dataset.theme || 'paper';
+  choices.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeChoice === t)));
+  picker.querySelector('#theme-label')!.textContent = choices.find(b => b.dataset.themeChoice === t)?.querySelector('strong')?.firstChild?.textContent?.trim() || '纸上';
+ }
+ choices.forEach(b => b.addEventListener('click', () => {
+  const y = window.scrollY;
+  document.documentElement.dataset.theme = b.dataset.themeChoice;
+  try { localStorage.setItem('blog-theme', b.dataset.themeChoice!); } catch { picker.querySelector('.theme-feedback')!.textContent = '主题已切换；浏览器暂不允许保存偏好'; }
+  sync(); window.scrollTo({top:y,behavior:'instant'});
+ }));
+ document.addEventListener('click', e => { if (!picker.contains(e.target as Node)) picker.open = false; });
+ picker.addEventListener('keydown', e => { if (e.key === 'Escape') { picker.open = false; picker.querySelector('summary')!.focus(); } });
+ window.addEventListener('storage', e => { if(e.key === 'blog-theme') { document.documentElement.dataset.theme = choices.some(b => b.dataset.themeChoice === e.newValue) ? e.newValue! : 'paper'; sync(); } });
+ sync();
+</script>
+<style>
+ .theme-picker { position:relative; font-family:var(--sans); }
+ summary { list-style:none; display:flex; gap:.5rem; padding:.45rem .8rem; border:1px solid var(--line); border-radius:30px; cursor:pointer; font-size:.8rem; white-space:nowrap; }
+ summary::-webkit-details-marker { display:none; }
+ .theme-panel { position:absolute; right:0; top:calc(100% + 18px); width:365px; max-width:calc(100vw - 28px); max-height:calc(100dvh - 100px); overflow:auto; padding:20px; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:16px; box-shadow:0 18px 60px #0002; z-index:100; }
+ .theme-panel-heading { display:grid; gap:3px; margin-bottom:15px; }
+ .theme-panel-heading > span,.theme-feedback { color:var(--muted); font-size:.72rem; }
+ .theme-options { display:grid; gap:7px; }
+ button { display:flex; width:100%; align-items:center; gap:12px; padding:10px; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:9px; text-align:left; font:inherit; cursor:pointer; }
+ button:hover { background:var(--surface-2); }
+ button[aria-pressed="true"] { border-color:var(--acid); background:var(--surface-2); }
+ button strong { display:block; font-size:.85rem; }
+ button small { color:var(--muted); font-weight:400; margin-left:5px; }
+ .theme-description { display:block; font-size:.65rem; color:var(--muted); }
+ .theme-check { margin-left:auto; visibility:hidden; color:var(--acid); }
+ [aria-pressed="true"] .theme-check { visibility:visible; }
+ .theme-preview { width:45px; height:52px; padding:4px 8px; flex:none; background:var(--preview-bg); color:var(--preview-accent); border:1px solid #8884; }
+ .theme-preview b { font:21px Georgia,serif; }
+ .theme-preview i { display:block; height:2px; background:currentColor; margin-top:5px; opacity:.5; }
+ .theme-feedback { margin:14px 0 0; }
+ @media(max-width:500px) { .theme-panel { position:fixed; top:76px; right:14px; } }
+</style>
