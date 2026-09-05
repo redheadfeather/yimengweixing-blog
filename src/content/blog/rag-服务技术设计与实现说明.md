@@ -3,7 +3,7 @@ title: "RAG 服务技术设计与实现说明"
 description: "基于 FastAPI、Qdrant、LM Studio 与 OpenRouter 构建可观测中文 RAG 服务的架构、检索链路和工程边界。"
 pubDate: "2026-08-10"
 tags: ["RAG", "Python", "AI"]
-featured: false
+featured: true
 ---
 
 > 最后核对日期：2026-08-10。本文以当前仓库代码为准；“代码默认值”和“当前运行

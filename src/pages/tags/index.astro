@@ -16,10 +16,10 @@ const tags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeC
 	<head><BaseHead title={`Tag 图谱 · ${SITE_TITLE}`} description="按 Tag 分类浏览文章" /></head>
 	<body><Header /><main>
 		<header class="tag-head reveal">
-			<span class="eyebrow">Knowledge coordinates</span>
-			<p class="serial">INDEX / {String(tags.length).padStart(2, '0')}</p>
-			<h1>TAG<br />图谱</h1>
-			<p>每个 Tag 都是一条思考路径。选择一个坐标，查看同一主题下的全部文章。</p>
+			<span class="eyebrow">主题索引</span>
+			<p class="serial">共 {String(tags.length).padStart(2, '0')} 个标签</p>
+			<h1>标签<br />漫游</h1>
+			<p>每个标签都是一条思考路径。选择一个主题，看看散落在时间里的文章如何彼此连接。</p>
 		</header>
 		<section class="tag-grid" aria-label="所有 Tag">
 			{tags.map(([tag, count], index) => (

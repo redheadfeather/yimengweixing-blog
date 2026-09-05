@@ -32,10 +32,10 @@ const { tag, posts } = Astro.props;
 	<head><BaseHead title={`#${tag} · ${SITE_TITLE}`} description={`浏览 ${posts.length} 篇带有“${tag}”Tag 的文章`} /></head>
 	<body><Header /><main>
 		<header class="tag-head reveal">
-			<a href="/tags/">← ALL TAGS</a>
-			<span class="eyebrow">Filtered frequency</span>
+			<a href="/tags/">← 所有标签</a>
+			<span class="eyebrow">主题文章</span>
 			<h1>#{tag}</h1>
-			<p><strong>{String(posts.length).padStart(2, '0')}</strong> 篇文章连接到这个坐标。</p>
+			<p><strong>{String(posts.length).padStart(2, '0')}</strong> 篇文章写到了这个主题。</p>
 		</header>
 		<section class="post-list" aria-label={`Tag ${tag} 下的文章`}>
 			{posts.map((post, index) => (
