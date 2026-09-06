@@ -15,7 +15,7 @@ const outline = headings.filter((heading) => heading.depth===2 || heading.depth=
 <html lang="zh-CN"><head><BaseHead title={title} description={description} image={heroImage}/></head>
 <body><Header/><div class="reading-progress" aria-hidden="true"><span></span></div><main>
 	<a class="back archive-return" href="/blog/">← 返回档案柜</a>
-	<article class="article-terminal pixel-shell reveal">
+	<article class="article-terminal pixel-shell">
 		<div class="terminal-bar"><span>LOG READER / READ ONLY</span><span class="reader-light">● CHANNEL ONLINE</span></div>
 		<header class="post-head">
 			<div class="post-meta"><FormattedDate date={pubDate}/><span>·</span><div class="post-tags">{tags.map((tag) => <a href={getTagPath(tag)}>#{tag}</a>)}</div></div>
