@@ -5,50 +5,14 @@ import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import { SITE_TITLE } from '../../consts';
 import { getTagPath } from '../../utils/tags';
-
-const posts = await getCollection('blog');
-const tagCounts = new Map<string, number>();
-posts.forEach((post) => post.data.tags.forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1)));
-const tags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN'));
+const posts=await getCollection('blog');const counts=new Map<string,number>();posts.forEach((post)=>post.data.tags.forEach((tag)=>counts.set(tag,(counts.get(tag)??0)+1)));const tags=[...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'zh-CN'));
 ---
-<!doctype html>
-<html lang="zh-CN">
-	<head><BaseHead title={`Tag 图谱 · ${SITE_TITLE}`} description="按 Tag 分类浏览文章" /></head>
-	<body><Header /><main>
-		<header class="tag-head reveal">
-			<span class="eyebrow">主题索引</span>
-			<p class="serial">共 {String(tags.length).padStart(2, '0')} 个标签</p>
-			<h1>标签<br />漫游</h1>
-			<p>每个标签都是一条思考路径。选择一个主题，看看散落在时间里的文章如何彼此连接。</p>
-		</header>
-		<section class="tag-grid" aria-label="所有 Tag">
-			{tags.map(([tag, count], index) => (
-				<a href={getTagPath(tag)} style={`--i:${index}`}>
-					<span class="index">{String(index + 1).padStart(2, '0')}</span>
-					<h2>#{tag}</h2>
-					<span class="count">{count} 篇文章</span>
-					<span class="arrow" aria-hidden="true">↗</span>
-				</a>
-			))}
-		</section>
-		<a class="back" href="/blog/#tags">← 返回文章搜索</a>
-	</main><Footer /></body>
-</html>
+<!doctype html><html lang="zh-CN"><head><BaseHead title={`信号索引 · ${SITE_TITLE}`} description="按标签频段浏览全部技术档案"/></head><body><Header/><main>
+<header class="tag-head reveal"><span class="eyebrow">FREQUENCY MAP</span><p class="serial">{String(tags.length).padStart(2,'0')} CHANNELS ONLINE</p><h1>信号<br/>索引</h1><p>每个标签都是一段可调谐的频率。选择一个频道，查看散落在时间里的记录如何相互接线。</p></header>
+<section class="tag-grid pixel-shell" aria-label="所有标签">{tags.map(([tag,count],index)=><a href={getTagPath(tag)} style={`--i:${index}`}><span class="index">CH / {String(index+1).padStart(2,'0')}</span><h2>#{tag}</h2><span class="count">{count} 枚卡带</span><span class="arrow">TUNE →</span></a>)}</section>
+<a class="back" href="/blog/">← 返回档案柜</a>
+</main><Footer/></body></html>
 <style>
-	.tag-head { position: relative; padding: 6rem 0 4.5rem; }
-	.tag-head .serial { position: absolute; top: 6.5rem; right: 0; color: var(--hot); font: .65rem monospace; letter-spacing: .16em; }
-	.tag-head h1 { margin: 0 0 2rem; font-size: clamp(5rem, 15vw, 13rem); line-height: .75; }
-	.tag-head > p:last-child { max-width: 580px; color: var(--muted); }
-	.tag-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
-	.tag-grid a { position: relative; display: flex; min-height: 220px; flex-direction: column; justify-content: space-between; padding: 1.5rem; overflow: hidden; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); text-decoration: none; transition: color .25s ease, background .25s ease, transform .25s ease; }
-	.tag-grid a::before { content: ""; position: absolute; inset: auto -30% -60% auto; width: 180px; aspect-ratio: 1; background: var(--acid); border-radius: 50%; filter: blur(80px); opacity: 0; transition: opacity .3s ease; }
-	.tag-grid a:hover { z-index: 2; color: var(--acid); background: var(--surface); transform: translateY(-6px); }
-	.tag-grid a:hover::before { opacity: .2; }
-	.index, .count { color: var(--muted); font: .62rem monospace; letter-spacing: .1em; }
-	h2 { margin: auto 0; font-size: clamp(1.7rem, 3.5vw, 2.8rem); }
-	.arrow { position: absolute; right: 1.5rem; bottom: 1.2rem; color: var(--cyan); font-size: 1.2rem; }
-	.back { display: inline-block; margin: 3rem 0 1rem; color: var(--muted); font: .7rem monospace; text-decoration: none; }
-	.back:hover { color: var(--acid); }
-	@media (max-width: 850px) { .tag-grid { grid-template-columns: repeat(2, 1fr); } }
-	@media (max-width: 540px) { .tag-head { padding-top: 4rem; } .tag-grid { grid-template-columns: 1fr; } .tag-grid a { min-height: 170px; } }
+.tag-head{position:relative;padding:5rem 0 3rem;color:var(--paper)}.tag-head .serial{position:absolute;right:0;top:5.5rem;color:#ff9870;font-family:var(--display);font-size:.62rem}.tag-head h1{margin:0 0 1.4rem;color:var(--paper);font-size:clamp(4rem,12vw,9rem);line-height:.8}.tag-head>p:last-child{max-width:580px;color:#d7b9a3}.tag-grid{display:grid;grid-template-columns:repeat(3,1fr);padding:1.2rem}.tag-grid a{position:relative;display:flex;min-height:205px;flex-direction:column;justify-content:space-between;padding:1.35rem;overflow:hidden;background:var(--paper);border:3px solid var(--line);text-decoration:none;transition:.2s;animation:lab-boot .5s steps(5) both;animation-delay:calc(var(--i)*35ms)}.tag-grid a:hover{z-index:2;color:var(--paper);background:var(--hot);transform:translate(-3px,-6px);box-shadow:8px 9px #3b1d17}.index,.count{color:var(--muted);font-family:var(--display);font-size:.57rem}.tag-grid a:hover .index,.tag-grid a:hover .count{color:#ffd3b6}.tag-grid h2{margin:auto 0;font-size:clamp(1.4rem,3vw,2.2rem)}.arrow{color:var(--hot);font-family:var(--display);font-size:.58rem}.tag-grid a:hover .arrow{color:var(--yellow)}.back{margin:3rem 0 1rem;color:#e0b69a}
+@media(max-width:850px){.tag-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:540px){.tag-head{padding-top:3.5rem}.tag-head .serial{position:static}.tag-grid{grid-template-columns:1fr}.tag-grid a{min-height:160px}}
 </style>

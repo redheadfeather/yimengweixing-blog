@@ -6,68 +6,17 @@ import Footer from '../../components/Footer.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
 import { SITE_TITLE } from '../../consts';
-import { getTagPath, toTagSlug } from '../../utils/tags';
-
-export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	const tags = [...new Set(posts.flatMap((post) => post.data.tags))];
-	return tags.map((tag) => ({
-		params: { tag: toTagSlug(tag) },
-		props: {
-			tag,
-			posts: posts.filter((post) => post.data.tags.includes(tag)).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()),
-		},
-	}));
-}
-
-interface Props {
-	tag: string;
-	posts: CollectionEntry<'blog'>[];
-}
-
-const { tag, posts } = Astro.props;
+import { getTagPath,toTagSlug } from '../../utils/tags';
+export async function getStaticPaths(){const posts=await getCollection('blog');const tags=[...new Set(posts.flatMap((post)=>post.data.tags))];return tags.map((tag)=>({params:{tag:toTagSlug(tag)},props:{tag,posts:posts.filter((post)=>post.data.tags.includes(tag)).sort((a,b)=>b.data.pubDate.valueOf()-a.data.pubDate.valueOf())}}))}
+interface Props{tag:string;posts:CollectionEntry<'blog'>[]}
+const {tag,posts}=Astro.props;
 ---
-<!doctype html>
-<html lang="zh-CN">
-	<head><BaseHead title={`#${tag} · ${SITE_TITLE}`} description={`浏览 ${posts.length} 篇带有“${tag}”Tag 的文章`} /></head>
-	<body><Header /><main>
-		<header class="tag-head reveal">
-			<a href="/tags/">← 所有标签</a>
-			<span class="eyebrow">主题文章</span>
-			<h1>#{tag}</h1>
-			<p><strong>{String(posts.length).padStart(2, '0')}</strong> 篇文章写到了这个主题。</p>
-		</header>
-		<section class="post-list" aria-label={`Tag ${tag} 下的文章`}>
-			{posts.map((post, index) => (
-				<article>
-					<span class="index">{String(index + 1).padStart(2, '0')}</span>
-					<div class="date"><FormattedDate date={post.data.pubDate} /></div>
-					<a class="title" href={`/blog/${post.id}/`}><h2>{post.data.title}</h2><p>{post.data.description}</p></a>
-					<div class="other-tags">{post.data.tags.filter((item) => item !== tag).map((item) => <a href={getTagPath(item)}>#{item}</a>)}</div>
-					<a class="arrow" href={`/blog/${post.id}/`} aria-label={`阅读《${post.data.title}》`}>↗</a>
-				</article>
-			))}
-		</section>
-		<a class="search-link button-link" href="/blog/#tags">搜索全部文章 <span>→</span></a>
-	</main><Footer /></body>
-</html>
+<!doctype html><html lang="zh-CN"><head><BaseHead title={`#${tag} · ${SITE_TITLE}`} description={`读取 ${posts.length} 篇带有“${tag}”标签的文章`}/></head><body><Header/><main>
+<header class="tag-head reveal"><a href="/tags/">← 所有频段</a><span class="eyebrow">ACTIVE CHANNEL</span><h1>#{tag}</h1><p><strong>{String(posts.length).padStart(2,'0')}</strong> 枚数据卡带正在广播。</p></header>
+<section class="post-list pixel-shell" aria-label={`${tag} 标签下的文章`}>{posts.map((post,index)=><article><span class="index">{String(index+1).padStart(2,'0')}</span><div class="date"><FormattedDate date={post.data.pubDate}/></div><a class="title" href={`/blog/${post.id}/`}><h2>{post.data.title}</h2><p>{post.data.description}</p></a><div class="other-tags">{post.data.tags.filter((item)=>item!==tag).map((item)=><a href={getTagPath(item)}>#{item}</a>)}</div><a class="arrow" href={`/blog/${post.id}/`} aria-label={`读取《${post.data.title}》`}>LOAD →</a></article>)}</section>
+<a class="search-link button-link" href={`/blog/?tag=${encodeURIComponent(tag)}`}>在档案柜中筛选 →</a>
+</main><Footer/></body></html>
 <style>
-	.tag-head { position: relative; padding: 6rem 0 4rem; border-bottom: 1px solid var(--line); }
-	.tag-head > a { display: block; margin-bottom: 3rem; color: var(--muted); font: .65rem monospace; letter-spacing: .12em; text-decoration: none; }
-	.tag-head > a:hover { color: var(--acid); }
-	.tag-head h1 { max-width: 1000px; margin: .2rem 0 1.5rem; color: var(--ink); font-size: clamp(4rem, 12vw, 10rem); overflow-wrap: anywhere; }
-	.tag-head > p:last-child { color: var(--muted); font: .75rem monospace; letter-spacing: .08em; }
-	.tag-head strong { margin-right: .5rem; color: var(--acid); font-size: 1.2rem; }
-	.post-list article { position: relative; display: grid; grid-template-columns: 50px 120px 1fr minmax(100px, auto) 40px; align-items: center; gap: 1rem; padding: 2rem 1rem; border-bottom: 1px solid var(--line); transition: background .25s ease, transform .25s ease; }
-	.post-list article:hover { z-index: 1; background: var(--surface); transform: translateX(8px); }
-	.index, .date { color: var(--muted); font: .62rem monospace; letter-spacing: .08em; }
-	.index { color: var(--acid); }
-	.title { text-decoration: none; }
-	.title h2 { margin: 0 0 .6rem; font-size: clamp(1.5rem, 3vw, 2.4rem); }
-	.title p { margin: 0; color: var(--muted); font-size: .78rem; }
-	.other-tags { display: flex; flex-wrap: wrap; gap: .5rem; }
-	.other-tags a { color: var(--cyan); font: .62rem monospace; text-decoration: none; }
-	.arrow { color: var(--cyan); font-size: 1.3rem; text-decoration: none; }
-	.search-link { margin: 4rem 0 1rem; }
-	@media (max-width: 760px) { .tag-head { padding-top: 4rem; } .post-list article { grid-template-columns: 35px 1fr 30px; padding: 1.5rem .4rem; } .date { grid-column: 2; grid-row: 1; } .title { grid-column: 2; grid-row: 2; } .index { grid-row: 1 / 3; align-self: start; } .arrow { grid-column: 3; grid-row: 1 / 3; } .other-tags { display: none; } }
+.tag-head{padding:4.5rem 0 3rem;color:var(--paper)}.tag-head>a{display:block;margin-bottom:2.5rem;color:#d8b39a;font-family:var(--display);font-size:.62rem;text-decoration:none}.tag-head h1{max-width:1000px;margin:.2rem 0 1rem;color:var(--paper);font-size:clamp(3.5rem,10vw,7.5rem);overflow-wrap:anywhere}.tag-head>p:last-child{color:#d8b39a;font-family:var(--display);font-size:.65rem}.tag-head strong{margin-right:.5rem;color:#ff8053;font-size:1rem}.post-list{padding:1.2rem}.post-list article{position:relative;display:grid;grid-template-columns:45px 110px 1fr minmax(100px,auto) 75px;align-items:center;gap:1rem;padding:1.6rem 1rem;background:var(--paper);border-bottom:3px solid #8c6246;transition:.2s}.post-list article:last-child{border-bottom:0}.post-list article:hover{z-index:1;background:#e8c995;transform:translateX(7px)}.index,.date{color:var(--muted);font-family:var(--display);font-size:.57rem}.index{color:var(--hot)}.title{text-decoration:none}.title h2{margin:0 0 .4rem;font-size:clamp(1.25rem,2.5vw,1.9rem)}.title p{margin:0;color:var(--muted);font-size:.76rem}.other-tags{display:flex;flex-wrap:wrap;gap:.4rem}.other-tags a{color:#177c76;font-family:var(--display);font-size:.55rem;text-decoration:none}.arrow{color:var(--hot);font-family:var(--display);font-size:.56rem;text-decoration:none}.search-link{margin:3rem 0 1rem}
+@media(max-width:760px){.tag-head{padding-top:3.5rem}.post-list article{grid-template-columns:32px 1fr 55px;padding:1.2rem .6rem}.date{grid-column:2;grid-row:1}.title{grid-column:2;grid-row:2}.index{grid-row:1/3;align-self:start}.arrow{grid-column:3;grid-row:1/3}.other-tags{display:none}}
 </style>

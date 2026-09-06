@@ -1,176 +1,120 @@
 <canvas id="motion-background" aria-hidden="true"></canvas>
 <div class="motion-grain" aria-hidden="true"></div>
-
+<div class="lab-toast" id="lab-toast" role="status" aria-live="polite"></div>
 <script is:inline>
 (() => {
 	const canvas = document.getElementById('motion-background');
 	if (!(canvas instanceof HTMLCanvasElement)) return;
 	const context = canvas.getContext('2d');
 	if (!context) return;
-
 	const root = document.documentElement;
+	const soundButton = document.getElementById('sound-toggle');
+	const motionButton = document.getElementById('motion-toggle');
+	const toast = document.getElementById('lab-toast');
 	const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-	const coarsePointer = matchMedia('(pointer: coarse)').matches;
-	const quietPage = Boolean(document.getElementById('article-content'));
-	const intensity = quietPage ? .48 : 1;
-	let width = innerWidth;
-	let height = innerHeight;
-	let theme = root.dataset.theme || 'paper';
-	let particles = [];
-	let ripples = [];
-	let frame = 0;
-	let lastTime = performance.now();
-	let lastPaint = 0;
-	const pointer = { x: .72, y: .34 };
-	const target = { x: .72, y: .34, active: false };
-
-	const hexToRgba = (hex, alpha) => {
-		const value = hex.trim().replace('#', '');
-		if (value.length !== 6) return `rgba(120,120,120,${alpha})`;
-		const number = Number.parseInt(value, 16);
-		return `rgba(${number >> 16},${number >> 8 & 255},${number & 255},${alpha})`;
+	const coarse = matchMedia('(pointer: coarse)').matches;
+	let soundOn = false;
+	let motionOn = !reduceMotion;
+	try { soundOn = localStorage.getItem('pixel-lab-sound') === 'on'; motionOn = localStorage.getItem('pixel-lab-motion') !== 'off' && !reduceMotion; } catch {}
+	let audioContext;
+	const beep = (type = 'click') => {
+		if (!soundOn) return;
+		audioContext ??= new (window.AudioContext || window.webkitAudioContext)();
+		if (audioContext.state === 'suspended') audioContext.resume();
+		const map = { hover:[560,.035,'square'], click:[240,.08,'square'], search:[740,.11,'triangle'], copy:[420,.14,'square'], nav:[190,.13,'sawtooth'] };
+		const [frequency,duration,wave] = map[type] || map.click;
+		const oscillator = audioContext.createOscillator();
+		const gain = audioContext.createGain();
+		oscillator.type = wave;
+		oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+		if (type === 'nav') oscillator.frequency.exponentialRampToValueAtTime(frequency * 2.2, audioContext.currentTime + duration);
+		gain.gain.setValueAtTime(.035, audioContext.currentTime);
+		gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + duration);
+		oscillator.connect(gain).connect(audioContext.destination);
+		oscillator.start(); oscillator.stop(audioContext.currentTime + duration);
 	};
-	const color = (name, fallback) => getComputedStyle(root).getPropertyValue(name).trim() || fallback;
-	const makeParticles = () => {
-		const count = coarsePointer ? (theme === 'orbit' ? 40 : 18) : (theme === 'orbit' ? 82 : theme === 'console' ? 44 : 32);
-		particles = Array.from({ length: count }, (_, index) => ({
-			x: Math.random(), y: Math.random(), size: Math.random() * 1.5 + .25,
-			speed: Math.random() * .6 + .2, phase: index,
-		}));
+	window.pixelLabBeep = beep;
+	const notify = (message) => {
+		if (!toast) return;
+		toast.textContent = message; toast.classList.add('show');
+		setTimeout(() => toast.classList.remove('show'), 1200);
 	};
-	const resize = () => {
-		const dpr = Math.min(devicePixelRatio || 1, 1.5);
-		width = innerWidth; height = innerHeight;
-		canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
-		canvas.style.width = `${width}px`; canvas.style.height = `${height}px`;
-		context.setTransform(dpr, 0, 0, dpr, 0, 0);
+	const syncControls = () => {
+		soundButton?.classList.toggle('active', soundOn);
+		motionButton?.classList.toggle('active', motionOn);
+		soundButton?.setAttribute('aria-label', soundOn ? '关闭音效' : '开启音效');
+		motionButton?.setAttribute('aria-label', motionOn ? '关闭动效' : '开启动效');
+		root.dataset.motion = motionOn ? 'on' : 'off';
 	};
-
-	const draw = (time) => {
-		if (coarsePointer && time - lastPaint < 34) { frame = requestAnimationFrame(draw); return; }
-		const delta = Math.min((time - lastTime) / 1000, .04);
-		lastTime = time; lastPaint = time;
-		context.clearRect(0, 0, width, height);
-		pointer.x += (target.x - pointer.x) * .075;
-		pointer.y += (target.y - pointer.y) * .075;
-		const mouseX = pointer.x * width;
-		const mouseY = pointer.y * height;
-		const reactive = target.active && !coarsePointer;
-		const accent = color('--acid', '#a04431');
-		const secondary = color('--cyan', '#725e47');
-
-		if (theme === 'paper') {
-			for (let index = 0; index < 5; index++) {
-				const x = width * (.7 + Math.sin(time * .00008 + index * 2) * .12) + (reactive ? (mouseX - width * .7) * (.08 + index * .018) : 0);
-				const y = height * (.18 + index * .15) + (reactive ? (mouseY - height * .45) * (.05 + index * .012) : 0);
-				const radius = (120 + index * 28) * intensity;
-				const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
-				gradient.addColorStop(0, hexToRgba(index % 2 ? accent : secondary, .052 * intensity));
-				gradient.addColorStop(1, hexToRgba(accent, 0));
-				context.fillStyle = gradient; context.fillRect(0, 0, width, height);
-			}
-			if (reactive) {
-				const glow = context.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, 95 * intensity);
-				glow.addColorStop(0, hexToRgba(accent, .09 * intensity)); glow.addColorStop(1, hexToRgba(accent, 0));
-				context.fillStyle = glow; context.fillRect(0, 0, width, height);
-			}
-		} else if (theme === 'studio') {
-			const offsetX = reactive ? (pointer.x - .5) * 28 : 0;
-			const offsetY = reactive ? (pointer.y - .5) * 28 : 0;
-			context.strokeStyle = hexToRgba(accent, .095 * intensity); context.lineWidth = 1;
-			for (let x = -50; x < width + 50; x += 46) { context.beginPath(); context.moveTo(x + offsetX, 0); context.lineTo(x - offsetX, height); context.stroke(); }
-			for (let y = -50; y < height + 50; y += 46) { context.beginPath(); context.moveTo(0, y + offsetY); context.lineTo(width, y - offsetY); context.stroke(); }
-			const spotlight = context.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, 280 * intensity);
-			spotlight.addColorStop(0, hexToRgba(accent, (reactive ? .14 : .065) * intensity)); spotlight.addColorStop(1, hexToRgba(accent, 0));
-			context.fillStyle = spotlight; context.fillRect(0, 0, width, height);
-		} else if (theme === 'orbit') {
-			const glowX = reactive ? mouseX : width * .78 + Math.sin(time * .00018) * 70;
-			const glowY = reactive ? mouseY : height * .28;
-			const aurora = context.createRadialGradient(glowX, glowY, 0, glowX, glowY, 400 * intensity);
-			aurora.addColorStop(0, hexToRgba(accent, .17 * intensity)); aurora.addColorStop(.5, hexToRgba(secondary, .07 * intensity)); aurora.addColorStop(1, hexToRgba(accent, 0));
-			context.fillStyle = aurora; context.fillRect(0, 0, width, height);
-			particles.forEach((particle) => {
-				particle.y -= delta * particle.speed * .025; if (particle.y < 0) particle.y = 1;
-				const depth = .25 + particle.size * .75;
-				const x = particle.x * width + (reactive ? (pointer.x - .5) * 32 * depth : 0);
-				const y = particle.y * height + (reactive ? (pointer.y - .5) * 20 * depth : 0);
-				const distance = Math.hypot(x - mouseX, y - mouseY);
-				if (reactive && distance < 105) { context.strokeStyle = hexToRgba(accent, (1 - distance / 105) * .2 * intensity); context.beginPath(); context.moveTo(mouseX, mouseY); context.lineTo(x, y); context.stroke(); }
-				context.fillStyle = hexToRgba(accent, (.22 + particle.size * .2) * intensity); context.beginPath(); context.arc(x, y, particle.size, 0, Math.PI * 2); context.fill();
-			});
-			if (reactive) { context.strokeStyle = hexToRgba(accent, .34 * intensity); context.beginPath(); context.arc(mouseX, mouseY, 18 + Math.sin(time * .004) * 3, 0, Math.PI * 2); context.stroke(); }
-		} else if (theme === 'console') {
-			context.font = '12px "Cascadia Code", monospace';
-			particles.forEach((particle) => {
-				particle.y += delta * particle.speed * .055; if (particle.y > 1) particle.y = 0;
-				let x = particle.x * width, y = particle.y * height;
-				const dx = x - mouseX, dy = y - mouseY, distance = Math.hypot(dx, dy) || 1;
-				if (reactive && distance < 120) { const force = (120 - distance) / 120 * 36; x += dx / distance * force; y += dy / distance * force; }
-				context.fillStyle = hexToRgba(particle.phase % 3 ? accent : secondary, (.1 + particle.size * .1 + (reactive && distance < 120 ? .14 : 0)) * intensity);
-				context.fillText(['01', '//', '<>', '未'][particle.phase % 4], x, y);
-			});
-			context.fillStyle = hexToRgba(accent, .025 * intensity); for (let y = 0; y < height; y += 5) context.fillRect(0, y, width, 1);
-			if (reactive) { context.strokeStyle = hexToRgba(accent, .28 * intensity); context.strokeRect(mouseX - 20, mouseY - 12, 40, 24); }
-		} else {
-			particles.forEach((particle) => {
-				particle.y -= delta * particle.speed * .018; particle.x += Math.sin(time * .0005 + particle.phase) * delta * .006;
-				if (particle.y < -.05) { particle.y = 1.05; particle.x = Math.random(); }
-				let x = particle.x * width, y = particle.y * height;
-				const dx = x - mouseX, dy = y - mouseY, distance = Math.hypot(dx, dy) || 1;
-				if (reactive && distance < 100) { x += dx / distance * (100 - distance) * .3; y += dy / distance * (100 - distance) * .3; }
-				const radius = 5 + particle.size * 7;
-				context.save(); context.translate(x, y); context.rotate(Math.sin(time * .0003 + particle.phase) * .7 + (reactive && distance < 100 ? dx / distance * .7 : 0));
-				context.fillStyle = hexToRgba(particle.phase % 2 ? accent : secondary, (.065 + particle.size * .042) * intensity); context.beginPath(); context.ellipse(0, 0, radius, radius * .42, 0, 0, Math.PI * 2); context.fill(); context.restore();
-			});
-			const lightX = reactive ? mouseX : width * .78, lightY = reactive ? mouseY : height * .18;
-			const sunlight = context.createRadialGradient(lightX, lightY, 0, lightX, lightY, 300 * intensity);
-			sunlight.addColorStop(0, `rgba(255,246,189,${.18 * intensity})`); sunlight.addColorStop(1, 'rgba(255,246,189,0)');
-			context.fillStyle = sunlight; context.fillRect(0, 0, width, height);
-		}
-
-		ripples = ripples.filter((ripple) => time - ripple.born < 1100);
-		ripples.forEach((ripple) => {
-			const age = Math.max(0, (time - ripple.born) / 1100);
-			context.strokeStyle = hexToRgba(accent, (1 - age) * .28 * intensity); context.lineWidth = 1.5;
-			context.beginPath(); context.arc(ripple.x * width, ripple.y * height, age * 95 * intensity, 0, Math.PI * 2); context.stroke();
-		});
-		if (!reduceMotion) frame = requestAnimationFrame(draw);
-	};
-
+	soundButton?.addEventListener('click', () => {
+		soundOn = !soundOn;
+		try { localStorage.setItem('pixel-lab-sound', soundOn ? 'on' : 'off'); } catch {}
+		syncControls(); if (soundOn) beep('search'); notify(soundOn ? 'SOUND // ONLINE' : 'SOUND // MUTED');
+	});
+	motionButton?.addEventListener('click', () => {
+		motionOn = !motionOn;
+		try { localStorage.setItem('pixel-lab-motion', motionOn ? 'on' : 'off'); } catch {}
+		syncControls(); beep(); notify(motionOn ? 'VISUAL FX // ONLINE' : 'VISUAL FX // PAUSED');
+	});
+	document.addEventListener('pointerover', (event) => {
+		const element = event.target.closest('button, a, article');
+		if (!element || element.dataset.sounded) return;
+		element.dataset.sounded = '1'; beep('hover'); setTimeout(() => delete element.dataset.sounded, 220);
+	});
+	document.addEventListener('click', (event) => {
+		const link = event.target.closest('a');
+		if (link && link.origin === location.origin) beep('nav');
+	});
+	addEventListener('pixel-lab:search', () => beep('search'));
+	addEventListener('pixel-lab:copy', () => beep('copy'));
+	syncControls();
 	document.querySelectorAll('.reveal').forEach((element) => {
 		if (reduceMotion) { element.classList.add('in-view'); return; }
 		new IntersectionObserver(([entry], observer) => {
 			if (entry.isIntersecting) { entry.target.classList.add('in-view'); observer.disconnect(); }
-		}, { threshold: .12 }).observe(element);
+		}, { threshold:.1 }).observe(element);
 	});
-
-	const onPointerMove = (event) => { target.x = event.clientX / width; target.y = event.clientY / height; target.active = true; };
-	const onPointerDown = (event) => { if (!coarsePointer) ripples.push({ x: event.clientX / width, y: event.clientY / height, born: performance.now() }); };
-	if (!reduceMotion) {
-		addEventListener('pointermove', onPointerMove, { passive: true });
-		addEventListener('pointerdown', onPointerDown, { passive: true });
-		addEventListener('mouseout', (event) => { if (!event.relatedTarget) target.active = false; });
-	}
-	addEventListener('resize', resize, { passive: true });
-	document.addEventListener('visibilitychange', () => {
-		if (document.hidden) cancelAnimationFrame(frame);
-		else if (!reduceMotion) { lastTime = performance.now(); frame = requestAnimationFrame(draw); }
-	});
-	new MutationObserver(() => {
-		const nextTheme = root.dataset.theme || 'paper';
-		if (nextTheme !== theme) { theme = nextTheme; ripples = []; makeParticles(); }
-	}).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-
-	resize(); makeParticles();
-	if (reduceMotion) draw(performance.now()); else frame = requestAnimationFrame(draw);
+	let width = innerWidth, height = innerHeight, frame = 0;
+	const pointer = { x:.72, y:.28 }, target = { x:.72, y:.28, active:false };
+	const particles = Array.from({ length:coarse ? 24 : 52 }, () => ({ x:Math.random(), y:Math.random(), size:Math.random()*3+1, speed:Math.random()*.00042+.00013, tone:Math.random()>.78 }));
+	const resize = () => {
+		const dpr = Math.min(devicePixelRatio || 1, 1.5); width = innerWidth; height = innerHeight;
+		canvas.width = Math.round(width*dpr); canvas.height = Math.round(height*dpr); canvas.style.width = width+'px'; canvas.style.height = height+'px'; context.setTransform(dpr,0,0,dpr,0,0);
+	};
+	const move = (event) => {
+		target.x = event.clientX / width; target.y = event.clientY / height; target.active = true;
+		if (!motionOn) return;
+		root.style.setProperty('--lab-hero-x', ((.5-target.x)*30)+'px');
+		root.style.setProperty('--lab-hero-y', ((.5-target.y)*18)+'px');
+		root.style.setProperty('--lab-copy-x', ((target.x-.5)*14)+'px');
+		root.style.setProperty('--lab-copy-y', ((target.y-.5)*10)+'px');
+	};
+	const draw = () => {
+		context.clearRect(0,0,width,height);
+		if (motionOn && !document.hidden) {
+			if (coarse && !target.active) { target.x=.5+Math.sin(performance.now()*.00035)*.28; target.y=.38+Math.cos(performance.now()*.00027)*.17; }
+			pointer.x += (target.x-pointer.x)*.06; pointer.y += (target.y-pointer.y)*.06;
+			const glow = context.createRadialGradient(pointer.x*width,pointer.y*height,0,pointer.x*width,pointer.y*height,260);
+			glow.addColorStop(0,'rgba(237,89,45,.13)'); glow.addColorStop(1,'rgba(237,89,45,0)'); context.fillStyle=glow; context.fillRect(0,0,width,height);
+			particles.forEach((particle) => {
+				particle.y -= particle.speed; if (particle.y < -.03) { particle.y=1.03; particle.x=Math.random(); }
+				let x=particle.x*width, y=particle.y*height; const dx=x-pointer.x*width, dy=y-pointer.y*height, distance=Math.hypot(dx,dy)||1;
+				if (!coarse && target.active && distance<115) { const force=(115-distance)*.22; x+=dx/distance*force; y+=dy/distance*force; }
+				context.globalAlpha=.25+particle.size*.09; context.fillStyle=particle.tone?'#2eb8ad':'#ed592d';
+				const size=Math.max(3,Math.round(particle.size)*3); context.fillRect(Math.round(x/4)*4,Math.round(y/4)*4,size,size);
+			});
+			context.globalAlpha=1;
+		}
+		frame=requestAnimationFrame(draw);
+	};
+	addEventListener('resize', resize, { passive:true });
+	if (!reduceMotion) addEventListener('pointermove', move, { passive:true });
+	document.addEventListener('visibilitychange', () => { if (document.hidden) cancelAnimationFrame(frame); else frame=requestAnimationFrame(draw); });
+	resize(); frame=requestAnimationFrame(draw);
 })();
 </script>
-
 <style>
-	#motion-background, .motion-grain { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
-	#motion-background { transition: opacity .35s ease; }
-	.motion-grain { opacity: .035; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E"); mix-blend-mode: multiply; }
-	:global(html[data-theme="orbit"]) .motion-grain, :global(html[data-theme="console"]) .motion-grain { opacity: .02; mix-blend-mode: screen; }
-	@media (pointer: coarse) { #motion-background { opacity: .7; } }
-	@media (prefers-reduced-motion: reduce) { #motion-background { opacity: .55; } }
+#motion-background,.motion-grain{position:fixed;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}#motion-background{image-rendering:pixelated}.motion-grain{z-index:3;opacity:.04;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter id='n'/%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");mix-blend-mode:overlay}.lab-toast{position:fixed;left:50%;bottom:28px;z-index:80;padding:.65rem 1rem;color:#ffd3a5;background:#2a1713;border:3px solid #ff6838;font-family:var(--display);font-size:.68rem;opacity:0;transform:translate(-50%,24px);transition:.2s;pointer-events:none}.lab-toast.show{opacity:1;transform:translate(-50%,0)}:global(html[data-motion='off']) #motion-background{display:none}@media(prefers-reduced-motion:reduce){#motion-background{display:none}}
+</style>
+
 </style>
