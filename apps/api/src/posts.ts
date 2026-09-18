@@ -163,7 +163,7 @@ export async function listPosts(c: Context<AppEnv>) {
 export async function getPost(c: Context<AppEnv>) {
   const slug = c.req.param("slug");
   const version = await contentVersion(c);
-  const cacheKey = `v3:${version}:posts:detail:${slug}`;
+  const cacheKey = `v4:${version}:posts:detail:${slug}`;
   const cached = await c.env.CACHE.get<ApiSuccess<PostDetail>>(cacheKey, "json");
 
   if (cached) {
@@ -200,10 +200,25 @@ export async function getPost(c: Context<AppEnv>) {
     .bind(row.id, row.id)
     .all<PostRow>();
 
+  const navigationResults = await c.env.DB.batch<PostRow>([
+    c.env.DB.prepare(
+      `SELECT ${summaryColumns} FROM posts AS p
+       WHERE p.status='published' AND (p.published_at < ? OR (p.published_at = ? AND p.id < ?))
+       ORDER BY p.published_at DESC,p.id DESC LIMIT 1`,
+    ).bind(row.published_at, row.published_at, row.id),
+    c.env.DB.prepare(
+      `SELECT ${summaryColumns} FROM posts AS p
+       WHERE p.status='published' AND (p.published_at > ? OR (p.published_at = ? AND p.id > ?))
+       ORDER BY p.published_at ASC,p.id ASC LIMIT 1`,
+    ).bind(row.published_at, row.published_at, row.id),
+  ]);
+
   const data: PostDetail = {
     ...mapSummary(row),
     content: row.content,
     relatedPosts: relatedRows.map(mapSummary),
+    previousPost: navigationResults[0]?.results[0] ? mapSummary(navigationResults[0].results[0]) : null,
+    nextPost: navigationResults[1]?.results[0] ? mapSummary(navigationResults[1].results[0]) : null,
   };
   const cachedBody: ApiSuccess<PostDetail> = {
     data,

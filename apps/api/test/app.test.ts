@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ApiError, ApiSuccess, HealthData } from "@yimengweixing/shared";
 import { app } from "../src/app";
 import type { Bindings } from "../src/bindings";
+import { assetIdsFromMarkdown } from "../src/asset-references";
 
 const baseEnv = {
   ENVIRONMENT: "test",
@@ -65,5 +66,15 @@ describe("API skeleton", () => {
 
     expect(response.status).toBe(401);
     expect(body.error.code).toBe("UNAUTHORIZED");
+  });
+});
+
+describe("asset references", () => {
+  it("extracts unique managed image ids from Markdown", () => {
+    const first = "a".repeat(64);
+    const second = "b".repeat(64);
+    const content = `![one](https://api.example/api/v1/assets/${first}/one.webp)\n![same](/api/v1/assets/${first}/copy.webp)\n![two](/api/v1/assets/${second}/two.png)`;
+
+    expect(assetIdsFromMarkdown(content)).toEqual([first, second]);
   });
 });

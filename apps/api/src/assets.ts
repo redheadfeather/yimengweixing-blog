@@ -56,7 +56,16 @@ export async function getAsset(c: Context<AppEnv>) {
 
 export async function deleteAsset(c: Context<AppEnv>) {
   const id = c.req.param("id");
+  const reference = await c.env.DB.prepare("SELECT post_id FROM post_assets WHERE asset_id=? LIMIT 1").bind(id).first();
+  if (reference) return fail(c, 409, "ASSET_IN_USE", "图片仍被文章引用，不能删除");
   const result = await c.env.DB.prepare("DELETE FROM assets WHERE id=?").bind(id).run();
   if (!result.meta.changes) return fail(c, 404, "ASSET_NOT_FOUND", "图片不存在");
   return ok(c, { id, deleted: true });
+}
+
+export async function cleanupAssets(c: Context<AppEnv>) {
+  const result = await c.env.DB.prepare(
+    "DELETE FROM assets WHERE created_at < datetime('now', '-1 day') AND NOT EXISTS (SELECT 1 FROM post_assets WHERE post_assets.asset_id=assets.id)",
+  ).run();
+  return ok(c, { deleted: result.meta.changes ?? 0 });
 }

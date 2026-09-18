@@ -29,6 +29,8 @@ export interface PostSummary {
 export interface PostDetail extends PostSummary {
   content: string;
   relatedPosts: PostSummary[];
+  previousPost: PostSummary | null;
+  nextPost: PostSummary | null;
 }
 
 export interface PostListData {

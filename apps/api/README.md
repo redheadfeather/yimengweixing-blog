@@ -54,15 +54,23 @@ GET /sitemap.xml
 
 ```text
 POST   /api/v1/admin/posts
+GET    /api/v1/admin/posts?status=all|published|archived
 PUT    /api/v1/admin/posts/:slug
+GET    /api/v1/admin/posts/:slug/revisions
+POST   /api/v1/admin/posts/:slug/archive
 DELETE /api/v1/admin/posts/:slug
 POST   /api/v1/admin/assets
+POST   /api/v1/admin/assets/cleanup
 DELETE /api/v1/admin/assets/:id
 ```
 
 文章写入会同步标签、关联关系与全文检索表，并通过内容版本号立即淘汰 KV 旧缓存。
 图片上传请求体是原始二进制，`Content-Type` 必须是受支持的图片类型，
 `X-File-Name` 使用 URL 编码后的文件名。
+
+更新、归档和永久删除前会保存文章修订快照。文章与托管图片通过 `post_assets` 建立引用；
+更新或删除文章时，只清理已失去全部引用的图片。手动孤儿清理仅影响上传超过一天且没有
+文章引用的文件，仍被文章使用的图片不能直接删除。
 
 运行完整检查：
 

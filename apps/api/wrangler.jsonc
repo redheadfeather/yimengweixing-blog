@@ -10,7 +10,7 @@
   },
   "vars": {
     "ENVIRONMENT": "production",
-    "API_VERSION": "0.2.0",
+    "API_VERSION": "0.3.0",
     "CORS_ORIGINS": "http://localhost:4321,https://yimengweixing.pages.dev",
     "SITE_URL": "https://yimengweixing.pages.dev"
   },

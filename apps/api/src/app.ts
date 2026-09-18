@@ -1,8 +1,8 @@
 import type { HealthData } from "@yimengweixing/shared";
 import { Hono } from "hono";
 import type { AppEnv } from "./bindings";
-import { createPost, deletePost, requireAdmin, updatePost } from "./admin";
-import { deleteAsset, getAsset, uploadAsset } from "./assets";
+import { archivePost, createPost, deletePost, listAdminPosts, listPostRevisions, requireAdmin, updatePost } from "./admin";
+import { cleanupAssets, deleteAsset, getAsset, uploadAsset } from "./assets";
 import { rssFeed, sitemap } from "./feeds";
 import { fail, ok } from "./http";
 import { getPost, listPosts, listTags } from "./posts";
@@ -75,11 +75,15 @@ app.get("/api/v1/tags", listTags);
 app.get("/api/v1/assets/:id/:fileName", getAsset);
 
 app.use("/api/v1/admin/*", requireAdmin);
+app.get("/api/v1/admin/posts", listAdminPosts);
 app.post("/api/v1/admin/posts", createPost);
 app.put("/api/v1/admin/posts/:slug", updatePost);
+app.get("/api/v1/admin/posts/:slug/revisions", listPostRevisions);
+app.post("/api/v1/admin/posts/:slug/archive", archivePost);
 app.delete("/api/v1/admin/posts/:slug", deletePost);
 app.post("/api/v1/admin/assets", uploadAsset);
 app.delete("/api/v1/admin/assets/:id", deleteAsset);
+app.post("/api/v1/admin/assets/cleanup", cleanupAssets);
 app.get("/rss.xml", rssFeed);
 app.get("/sitemap.xml", sitemap);
 
