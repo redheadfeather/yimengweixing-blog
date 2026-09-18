@@ -37,6 +37,10 @@ interface AdminPostRow {
   tags: string | null;
 }
 
+interface AdminPostDetailRow extends AdminPostRow {
+  content: string;
+}
+
 const encoder = new TextEncoder();
 const TAG_SEPARATOR = '\u001f';
 
@@ -210,6 +214,27 @@ export async function listAdminPosts(c: Context<AppEnv>) {
     updatedAt: row.updated_at,
     tags: row.tags ? row.tags.split(TAG_SEPARATOR).filter(Boolean) : [],
   })));
+}
+
+export async function getAdminPost(c: Context<AppEnv>) {
+  const slug = c.req.param('slug') ?? '';
+  const row = await c.env.DB.prepare(
+    `SELECT p.id,p.slug,p.title,p.description,p.content,p.status,p.featured,p.published_at,p.updated_at,
+      (SELECT GROUP_CONCAT(t.name, '${TAG_SEPARATOR}') FROM post_tags pt JOIN tags t ON t.id=pt.tag_id WHERE pt.post_id=p.id) AS tags
+     FROM posts p WHERE p.slug=?`,
+  ).bind(slug).first<AdminPostDetailRow>();
+  if (!row) return fail(c, 404, 'POST_NOT_FOUND', '文章不存在');
+  return ok(c, {
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    content: row.content,
+    status: row.status,
+    featured: row.featured === 1,
+    publishedAt: row.published_at,
+    updatedAt: row.updated_at,
+    tags: row.tags ? row.tags.split(TAG_SEPARATOR).filter(Boolean) : [],
+  });
 }
 
 export async function listPostRevisions(c: Context<AppEnv>) {

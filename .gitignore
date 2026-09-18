@@ -7,7 +7,7 @@ dist/
 node_modules/
 .wrangler-cache/
 .wrangler/
-apps/api/worker-configuration.d.ts
+apps/*/worker-configuration.d.ts
 
 # logs
 .playwright-cli/

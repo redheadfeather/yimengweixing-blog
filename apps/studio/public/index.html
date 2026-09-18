@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>一梦未醒 · 写作工作台</title>
+    <link rel="stylesheet" href="/studio.css" />
+    <script src="/studio.js" defer></script>
+  </head>
+  <body>
+    <div class="scanlines" aria-hidden="true"></div>
+    <main class="studio-shell">
+      <aside class="archive-panel" aria-label="文章列表">
+        <header class="brand-block">
+          <a class="brand" href="https://yimengweixing.pages.dev" target="_blank" rel="noreferrer">
+            <span class="brand-mark" aria-hidden="true">YM</span>
+            <span><strong>一梦未醒</strong><small>WRITER CONSOLE</small></span>
+          </a>
+          <div class="online-indicator"><i></i><span>PRIVATE CHANNEL</span></div>
+        </header>
+
+        <button class="new-post-button" id="new-post" type="button"><span>＋</span> 创建新日志</button>
+
+        <div class="list-tools">
+          <label class="search-box">
+            <span class="sr-only">搜索文章</span>
+            <span aria-hidden="true">⌕</span>
+            <input id="post-search" type="search" placeholder="搜索标题或标签" autocomplete="off" />
+          </label>
+          <div class="status-tabs" role="group" aria-label="文章状态">
+            <button class="active" data-status="all" type="button">全部</button>
+            <button data-status="published" type="button">在线</button>
+            <button data-status="archived" type="button">归档</button>
+          </div>
+        </div>
+
+        <div class="post-list" id="post-list" aria-live="polite">
+          <div class="list-placeholder">正在接入档案库…</div>
+        </div>
+        <footer class="archive-footer"><span id="post-count">0 篇日志</span><span>ACCESS / VERIFIED</span></footer>
+      </aside>
+
+      <section class="editor-panel">
+        <header class="editor-toolbar">
+          <div>
+            <p class="eyebrow">ACTIVE DOCUMENT</p>
+            <h1 id="editor-heading">新建日志</h1>
+          </div>
+          <div class="toolbar-actions">
+            <span class="save-state" id="save-state" role="status">尚未修改</span>
+            <a class="ghost-button" id="view-live" href="https://yimengweixing.pages.dev/blog/" target="_blank" rel="noreferrer" hidden>查看线上</a>
+            <button class="ghost-button danger" id="delete-post" type="button" hidden>删除</button>
+            <button class="ghost-button" id="archive-post" type="button" hidden>归档</button>
+            <button class="publish-button" id="publish-post" type="button"><span class="button-light"></span>发布日志</button>
+          </div>
+        </header>
+
+        <form id="editor-form" novalidate>
+          <section class="meta-grid" aria-label="文章元信息">
+            <label class="field title-field"><span>文章标题 <b>*</b></span><input id="title" name="title" required maxlength="200" placeholder="今天想记录什么？" /></label>
+            <label class="field slug-field"><span>URL 标识 <b>*</b></span><input id="slug" name="slug" required maxlength="100" placeholder="article-slug" /></label>
+            <label class="field description-field"><span>文章描述 <b>*</b></span><textarea id="description" name="description" required maxlength="500" rows="2" placeholder="用一两句话概括这篇文章"></textarea><small><output id="description-count">0</output>/500</small></label>
+            <label class="field tags-field"><span>标签 <b>*</b></span><input id="tags" name="tags" required placeholder="Java, Cloudflare, 随笔" /><small>使用逗号分隔，最多 8 个</small></label>
+            <label class="field date-field"><span>发布日期 <b>*</b></span><input id="published-at" name="publishedAt" type="date" required /></label>
+            <label class="switch-field"><input id="featured" name="featured" type="checkbox" /><span class="switch" aria-hidden="true"></span><span>设为精选</span></label>
+          </section>
+
+          <section class="document-workspace">
+            <div class="pane markdown-pane">
+              <header class="pane-header">
+                <div><i></i><span>MARKDOWN INPUT</span></div>
+                <div class="pane-actions">
+                  <input id="image-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden />
+                  <button id="upload-image" type="button">▣ 插入图片</button>
+                </div>
+              </header>
+              <label class="sr-only" for="content">Markdown 正文</label>
+              <textarea id="content" name="content" required spellcheck="true" placeholder="# 从这里开始写作…&#10;&#10;支持 Markdown 标题、列表、引用、代码块、链接和图片。"></textarea>
+              <footer class="pane-footer"><span id="word-count">0 字</span><span>Ctrl / ⌘ + S 发布</span></footer>
+            </div>
+
+            <div class="pane preview-pane">
+              <header class="pane-header"><div><i></i><span>LIVE PREVIEW</span></div><span class="preview-badge">安全预览</span></header>
+              <article class="markdown-preview" id="markdown-preview"><p class="preview-empty">预览信号等待输入…</p></article>
+              <footer class="pane-footer"><span>实时渲染</span><span>长文可独立滚动</span></footer>
+            </div>
+          </section>
+        </form>
+      </section>
+    </main>
+
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+    <div class="loading-mask" id="loading-mask" hidden><div class="loader"></div><p id="loading-text">正在同步…</p></div>
+  </body>
+</html>

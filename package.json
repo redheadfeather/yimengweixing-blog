@@ -5,6 +5,7 @@
   "version": "0.0.1",
   "workspaces": [
     "apps/api",
+    "apps/studio",
     "packages/shared"
   ],
   "engines": {
@@ -18,7 +19,10 @@
     "api:dev": "npm run dev --workspace @yimengweixing/api",
     "api:check": "npm run check --workspace @yimengweixing/api",
     "api:test": "npm run test --workspace @yimengweixing/api",
-    "api:migrate:local": "npm run db:migrate:local --workspace @yimengweixing/api"
+    "api:migrate:local": "npm run db:migrate:local --workspace @yimengweixing/api",
+    "studio:dev": "npm run dev --workspace @yimengweixing/studio",
+    "studio:check": "npm run check --workspace @yimengweixing/studio",
+    "studio:deploy": "npm run deploy --workspace @yimengweixing/studio"
   },
   "dependencies": {
     "astro": "^7.1.3",

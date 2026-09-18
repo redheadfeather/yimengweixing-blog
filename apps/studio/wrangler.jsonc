@@ -1,0 +1,30 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "yimengweixing-studio",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "API_ORIGIN": "https://yimengweixing-api.yimengweixing-api.workers.dev",
+    "SITE_URL": "https://yimengweixing.pages.dev",
+    "STUDIO_ALLOWED_EMAIL": "373598252@qq.com"
+  },
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "not_found_handling": "single-page-application"
+  },
+  "access": {
+    "dev": {
+      "aud": "yimengweixing-studio-local",
+      "identity": {
+        "email": "373598252@qq.com"
+      }
+    }
+  }
+}
