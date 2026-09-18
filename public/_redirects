@@ -1,0 +1,5 @@
+/blog/* /content-reader/ 200
+/tags/* /tag-reader/ 200
+/rss.xml https://yimengweixing-api.yimengweixing-api.workers.dev/rss.xml 302
+/sitemap.xml https://yimengweixing-api.yimengweixing-api.workers.dev/sitemap.xml 302
+/sitemap-index.xml https://yimengweixing-api.yimengweixing-api.workers.dev/sitemap.xml 302

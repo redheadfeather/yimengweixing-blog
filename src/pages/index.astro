@@ -1,15 +1,8 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import FormattedDate from '../components/FormattedDate.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
-import { getTagPath } from '../utils/tags';
-const posts = (await getCollection('blog')).sort((a,b) => b.data.pubDate.valueOf()-a.data.pubDate.valueOf());
-const tags = [...new Set(posts.flatMap((post) => post.data.tags))];
-const featured = posts.filter((post) => post.data.featured).slice(0,3);
-const displayPosts = featured.length > 0 ? featured : posts.slice(0,3);
 ---
 <!doctype html>
 <html lang="zh-CN">
@@ -27,20 +20,16 @@ const displayPosts = featured.length > 0 ? featured : posts.slice(0,3);
 	<section class="status-strip reveal delay-1" aria-label="实验室状态">
 		<div><strong>LAB STATUS</strong><span>稳定运行</span></div>
 		<div><strong>SIGNAL</strong><span class="equalizer"><i></i><i></i><i></i><i></i></span></div>
-		<div><strong>ARCHIVE</strong><span>{posts.length} 枚数据卡带</span></div>
+		<div><strong>ARCHIVE</strong><span id="archive-count">正在连接…</span></div>
 		<div><strong>LOCAL TIME</strong><span id="lab-clock">--:--:--</span></div>
 	</section>
 	<section class="cartridge-section reveal">
 		<header><div><span class="eyebrow">LATEST SIGNALS</span><h2>刚刚捕获的记录</h2></div><a href="/blog/">打开完整档案柜 ↗</a></header>
-		<div class="cartridge-grid">{displayPosts.map((post,index) => <article>
-			<span class="slot"></span><div class="card-code">CARTRIDGE / {String(index+1).padStart(2,'0')}</div>
-			<a class="card-main" href={`/blog/${post.id}/`}><h3>{post.data.title}</h3><p>{post.data.description}</p></a>
-			<div class="card-foot"><FormattedDate date={post.data.pubDate}/><span>{post.data.tags.slice(0,2).join(' / ')}</span></div>
-		</article>)}</div>
+		<div class="cartridge-grid" id="home-posts" aria-live="polite"><p class="load-error">正在读取 D1 档案…</p></div>
 	</section>
 	<section class="frequency pixel-shell reveal">
 		<div><span class="eyebrow">FREQUENCY SELECTOR</span><h2>选择一个信号频段</h2><p>标签不是抽屉，而是文章之间留下的接线。</p></div>
-		<div class="frequency-tags">{tags.slice(0,12).map((tag,index) => <a href={getTagPath(tag)} style={`--delay:${index*35}ms`}>#{tag}<span>↗</span></a>)}</div>
+		<div class="frequency-tags" id="home-tags"><span>正在校准频段…</span></div>
 	</section>
 </main><Footer/></body></html>
 <script>
@@ -48,6 +37,7 @@ const displayPosts = featured.length > 0 ? featured : posts.slice(0,3);
 	const updateClock = () => { if (clock) clock.textContent = new Date().toLocaleTimeString('zh-CN',{ hour12:false }); };
 	updateClock(); setInterval(updateClock,1000);
 </script>
+<script src="../scripts/home-content.ts"></script>
 <style>
 .lab-hero{height:min(670px,78vh);min-height:540px;margin-top:2.2rem;overflow:hidden;background:#0f0908}.hero-art{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;image-rendering:pixelated;transform:translate(var(--lab-hero-x),var(--lab-hero-y)) scale(1.02);transition:transform .15s linear;filter:saturate(.92) contrast(1.06)}.lab-hero::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,#0c070626,transparent 55%),repeating-linear-gradient(0deg,transparent 0 3px,#0002 4px);pointer-events:none}.screen-copy{position:absolute;z-index:3;left:8%;top:25%;width:43%;color:#ffdfb8;text-shadow:0 0 8px #f04c24;transform:translate(var(--lab-copy-x),var(--lab-copy-y));transition:transform .12s}.kicker{font-family:var(--display);font-size:.68rem;letter-spacing:.12em;color:#ff9a5e}.screen-copy h1{margin:.7rem 0;font-size:clamp(3rem,6vw,5.6rem);line-height:.92}.screen-copy p{max-width:500px;color:#f9ceb2;font-size:clamp(.86rem,1.5vw,1.05rem);line-height:1.75}.hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:1.3rem;margin-top:1.7rem}.ghost-button{padding:.65rem;color:#ffe3c4;border-bottom:3px solid #9b4b32;font-family:var(--display);font-size:.72rem;text-decoration:none}.ghost-button:hover{color:#56d7cc;border-color:var(--cyan)}
 .status-strip{display:grid;grid-template-columns:repeat(4,1fr);width:calc(100% - 70px);margin:-7px auto 5rem;padding:1rem;background:#dfc297;border:5px solid var(--line);box-shadow:0 8px #25120e,0 18px 45px #0007}.status-strip>div{padding:.75rem;color:#ffd8ad;background:#2a1713;border:3px solid #4b281e;box-shadow:inset 4px 4px #130b09;font-family:var(--display);font-size:.62rem}.status-strip strong{display:block;color:#ff6c3d;font-weight:400;font-size:.78rem}.equalizer{display:flex;height:17px;align-items:end;gap:3px}.equalizer i{width:6px;height:9px;background:#ff6335;animation:lab-eq .7s steps(3) infinite}.equalizer i:nth-child(2){animation-delay:.18s}.equalizer i:nth-child(3){animation-delay:.4s}

@@ -1,0 +1,31 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "yimengweixing-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-17",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "ENVIRONMENT": "production",
+    "API_VERSION": "0.1.0",
+    "CORS_ORIGINS": "http://localhost:4321,https://yimengweixing.pages.dev",
+    "SITE_URL": "https://yimengweixing.pages.dev"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "yimengweixing-blog",
+      "database_id": "1e1ae08e-a35e-4c28-be0c-baef95bfa3e2",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "d9376685931c41e683c9de8889a77fc3"
+    }
+  ]
+}

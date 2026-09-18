@@ -1,123 +1,36 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
-import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
 import { SITE_TITLE } from '../../consts';
-import { getTagPath } from '../../utils/tags';
-const posts = (await getCollection('blog')).sort((a,b) => b.data.pubDate.valueOf()-a.data.pubDate.valueOf());
-const counts = new Map<string,number>();
-posts.forEach((post) => post.data.tags.forEach((tag) => counts.set(tag,(counts.get(tag)??0)+1)));
-const tags = [...counts.entries()].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0],'zh-CN'));
 ---
 <!doctype html><html lang="zh-CN"><head><BaseHead title={`档案库 · ${SITE_TITLE}`} description="搜索标题、正文与标签，读取全部技术档案" /></head>
 <body><Header/><main>
-	<header class="archive-head reveal"><span class="eyebrow">DATA CARTRIDGE STORAGE</span><h1>实验档案柜</h1><p>搜索标题、正文和标签，或者拨动一个频段滤波器。点击任意卡带即可进入同一档案库的读取终端。</p></header>
-	<section class="search-console pixel-shell reveal delay-1" aria-labelledby="search-title">
-		<div class="console-head"><div><span class="status-dot"></span><span id="search-title">SIGNAL SCANNER / ONLINE</span></div><a href="/tags/">展开信号索引 ↗</a></div>
-		<label class="search-box" for="article-search"><span aria-hidden="true">&gt; SCAN</span><span class="sr-only">搜索文章</span><input id="article-search" type="search" placeholder="搜索标题、描述、正文或标签…" autocomplete="off"/><kbd>LIVE</kbd></label>
-		<div class="filter-row" id="tags"><span class="filter-label">FREQUENCY</span><button type="button" class="tag-filter active" data-tag="*" aria-pressed="true">全部 <small>{posts.length}</small></button>{tags.map(([tag,count]) => <button type="button" class="tag-filter" data-tag={tag} aria-pressed="false">#{tag} <small>{count}</small></button>)}</div>
-		<div class="query-status"><span id="result-count" aria-live="polite">捕获 {posts.length} 枚卡带</span><span>READY TO LOAD</span></div>
+	<section id="archive-view" hidden>
+		<header class="archive-head reveal"><span class="eyebrow">DATA CARTRIDGE STORAGE</span><h1>实验档案柜</h1><p>搜索标题、正文和标签，或者拨动一个频段滤波器。所有档案均由 D1 内容服务实时提供。</p></header>
+		<section class="search-console pixel-shell reveal delay-1" aria-labelledby="search-title">
+			<div class="console-head"><div><span class="status-dot"></span><span id="search-title">D1 SIGNAL SCANNER / ONLINE</span></div><a href="/tags/">展开信号索引 ↗</a></div>
+			<label class="search-box" for="article-search"><span aria-hidden="true">&gt; SCAN</span><span class="sr-only">搜索文章</span><input id="article-search" type="search" placeholder="搜索标题、描述、正文或标签…" autocomplete="off"/><kbd>LIVE</kbd></label>
+			<div class="filter-row" id="tags"><span class="filter-label">FREQUENCY</span></div>
+			<div class="query-status"><span id="result-count" aria-live="polite">正在连接 D1…</span><span>READY TO LOAD</span></div>
+		</section>
+		<section class="archive-grid" id="article-grid" aria-label="文章列表"></section>
+		<div class="empty-state pixel-shell" id="empty-state" hidden><span>NO SIGNAL</span><h2>没有匹配的档案</h2><p>换一个关键词，或者把频段切回“全部”。</p></div>
 	</section>
-	<section class="archive-grid" id="article-grid" aria-label="文章列表">{posts.map((post,index) => <article data-search={`${post.data.title} ${post.data.description} ${post.data.tags.join(' ')}`.toLocaleLowerCase('zh-CN')} data-tags={JSON.stringify(post.data.tags)} data-url={`/blog/${post.id}/`}>
-		<span class="slot"></span><div class="card-top"><span>CARTRIDGE / {String(index+1).padStart(2,'0')}</span><FormattedDate date={post.data.pubDate}/></div>
-		<a class="article-link" data-article-link href={`/blog/${post.id}/`}><h2>{post.data.title}</h2><p>{post.data.description}</p></a>
-		<div class="card-bottom"><div class="card-tags">{post.data.tags.map((tag) => <a href={getTagPath(tag)}>#{tag}</a>)}</div><a class="read-link" data-article-link href={`/blog/${post.id}/`} aria-label={`读取《${post.data.title}》`}>LOAD →</a></div>
-	</article>)}</section>
-	<div class="empty-state pixel-shell" id="empty-state" hidden><span>NO SIGNAL</span><h2>没有匹配的档案</h2><p>换一个关键词，或者把频段切回“全部”。</p></div>
+	<section id="reader-view" hidden>
+		<div class="reading-progress" aria-hidden="true"><span></span></div><a class="back archive-return" href="/blog/">← 返回档案柜</a>
+		<article class="article-terminal pixel-shell"><div class="terminal-bar"><span>LOG READER / D1 STREAM</span><span class="reader-light">● CHANNEL ONLINE</span></div>
+			<header class="post-head"><div class="post-meta" id="post-meta"></div><h1 id="post-title">正在读取档案…</h1><p id="post-description">正在建立与内容服务的连接。</p></header>
+			<div class="reading-layout"><details class="toc" id="toc" open><summary>读取坐标</summary><nav id="toc-nav" aria-label="文章目录"></nav></details><div class="prose" id="article-content"><p>正在解码数据卡带…</p></div></div>
+		</article>
+		<section class="related pixel-shell" id="related"><div><span class="eyebrow">NEXT CARTRIDGES</span><h2>继续读取相邻信号</h2></div><div class="related-grid" id="related-grid"></div></section>
+		<button class="back-top" type="button" aria-label="返回顶部">↑</button>
+	</section>
 </main><Footer/></body></html>
-<script is:inline>
-	const input = document.querySelector('#article-search');
-	const consolePanel = document.querySelector('.search-console');
-	const buttons = [...document.querySelectorAll('.tag-filter')];
-	const cards = [...document.querySelectorAll('#article-grid article')];
-	const resultCount = document.querySelector('#result-count');
-	const emptyState = document.querySelector('#empty-state');
-	const params = new URLSearchParams(location.search);
-	let selectedTag = params.get('tag') ?? '*';
-	let searchVersion = 0;
-	let debounceTimer = 0;
-	let pagefindPromise;
-	if (input) input.value = params.get('q') ?? '';
-	const cardTags = new Map(cards.map((card) => [card, JSON.parse(card.dataset.tags ?? '[]')]));
-	const loadPagefind = () => pagefindPromise ??= import('/pagefind/pagefind.js').then(async (api) => {
-		await api.init();
-		return api;
-	});
-	const syncButtons = () => buttons.forEach((button) => {
-		const active = (button.dataset.tag ?? '*') === selectedTag;
-		button.classList.toggle('active', active);
-		button.setAttribute('aria-pressed', String(active));
-	});
-	const syncLocation = (query) => {
-		const next = new URLSearchParams();
-		if (query) next.set('q', query);
-		if (selectedTag !== '*') next.set('tag', selectedTag);
-		history.replaceState(null, '', location.pathname + (next.size ? `?${next}` : ''));
-	};
-	const renderCards = (matches, query) => {
-		let visible = 0;
-		cards.forEach((card) => {
-			const tagMatch = selectedTag === '*' || cardTags.get(card)?.includes(selectedTag);
-			const path = new URL(card.dataset.url ?? '/', location.origin).pathname;
-			const metadataMatch = !query || (card.dataset.search ?? '').includes(query.toLocaleLowerCase('zh-CN'));
-			const match = tagMatch && (matches ? matches.has(path) : metadataMatch);
-			card.hidden = !match;
-			card.style.order = match && matches ? String(matches.get(path) ?? 0) : '';
-			if (match) visible += 1;
-		});
-		if (resultCount) resultCount.textContent = `捕获 ${visible} 枚卡带`;
-		if (emptyState) emptyState.hidden = visible !== 0;
-		consolePanel?.setAttribute('aria-busy', 'false');
-	};
-	const runSearch = async (updateUrl = true) => {
-		const query = input?.value.trim() ?? '';
-		const version = ++searchVersion;
-		syncButtons();
-		if (updateUrl) syncLocation(query);
-		if (!query) {
-			renderCards(null, '');
-			return;
-		}
-		consolePanel?.setAttribute('aria-busy', 'true');
-		if (resultCount) resultCount.textContent = '正在扫描分块索引…';
-		try {
-			const pagefind = await loadPagefind();
-			const options = selectedTag === '*' ? undefined : { filters: { tag: selectedTag } };
-			const search = await pagefind.search(query, options);
-			const data = await Promise.all(search.results.map((result) => result.data()));
-			if (version !== searchVersion) return;
-			const matches = new Map(data.map((item, index) => [new URL(item.url, location.origin).pathname, index]));
-			renderCards(matches, query);
-		} catch (error) {
-			console.warn('Pagefind unavailable; using metadata search.', error);
-			if (version === searchVersion) renderCards(null, query);
-		}
-	};
-	input?.addEventListener('focus', () => { void loadPagefind().catch(() => undefined); }, { once: true });
-	input?.addEventListener('input', () => {
-		clearTimeout(debounceTimer);
-		const query = input.value.trim();
-		if (!query) { void runSearch(); return; }
-		void loadPagefind().then((pagefind) => pagefind.preload(query, selectedTag === '*' ? undefined : { filters: { tag: selectedTag } })).catch(() => undefined);
-		debounceTimer = window.setTimeout(() => { void runSearch(); dispatchEvent(new Event('pixel-lab:search')); }, 180);
-	});
-	buttons.forEach((button) => button.addEventListener('click', () => {
-		selectedTag = button.dataset.tag ?? '*';
-		void runSearch();
-		dispatchEvent(new Event('pixel-lab:search'));
-	}));
-	document.querySelectorAll('[data-article-link]').forEach((link) => link.addEventListener('click', () => {
-		try { sessionStorage.setItem('pixel-lab-archive-return', location.pathname + location.search); } catch {}
-	}));
-	if (!buttons.some((button) => button.dataset.tag === selectedTag)) selectedTag = '*';
-	void runSearch(false);
-</script>
+<script src="../../scripts/blog-content.ts"></script>
 <style>
-.archive-head{max-width:880px;padding:5.5rem 0 3rem;color:var(--paper)}.archive-head h1{margin:0 0 1rem;color:var(--paper);font-size:clamp(3rem,8vw,6.5rem)}.archive-head p{max-width:650px;color:#d6b69c}
-.search-console{margin-bottom:3.5rem;overflow:hidden}.console-head,.query-status{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem 1rem;color:#ffbd82;background:#2a1713;border-bottom:3px solid #61352a;font-family:var(--display);font-size:.58rem}.console-head>div{display:flex;align-items:center;gap:.65rem}.console-head a{color:var(--cyan);text-decoration:none}.status-dot{width:8px;height:8px;background:var(--acid);box-shadow:0 0 12px var(--acid);animation:lab-blink 1.2s steps(2) infinite}.search-box{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:1rem;padding:1.1rem 1.3rem;background:#241310;border-bottom:3px solid #623729;color:#ff8954;font-family:var(--display);font-size:.7rem}.search-box input{min-width:0;padding:.6rem;color:#ffd4ad;background:#120a08;border:2px solid #8a442f;outline:0;font-size:1rem}.search-box:focus-within{box-shadow:inset 5px 0 var(--cyan)}kbd{padding:.2rem .45rem;border:2px solid #8a442f;font-size:.55rem}.filter-row{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem;padding:1rem 1.25rem;background:#e2c492}.filter-label{margin-right:.35rem;color:var(--muted);font-family:var(--display);font-size:.58rem}.tag-filter{padding:.42rem .65rem;color:#5f3428;background:#efd9b1;border:3px solid #603222;cursor:pointer;font-family:var(--display);font-size:.62rem}.tag-filter:hover,.tag-filter.active{color:#fff0cf;background:var(--hot);transform:translateY(-2px)}.tag-filter small{opacity:.7}.query-status{border:0}.query-status span:last-child{color:var(--cyan)}
-.archive-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.4rem}.archive-grid article{position:relative;display:flex;min-height:330px;flex-direction:column;padding:1.7rem;color:var(--ink);background:var(--paper);border:4px solid var(--line);box-shadow:inset -7px -7px #d0a472,8px 8px #391c16;transition:.2s}.archive-grid article[hidden]{display:none}.archive-grid article:hover{transform:translate(-3px,-7px) rotate(.35deg);box-shadow:inset -7px -7px #d0a472,12px 15px #2a1511}.slot{position:absolute;right:16px;top:18px;width:46px;height:8px;background:#401f18;box-shadow:inset 0 3px #160b09}.card-top{display:flex;justify-content:space-between;padding-right:60px;color:#9b3b28;font-family:var(--display);font-size:.57rem}.article-link{display:flex;flex:1;flex-direction:column;justify-content:flex-end;padding:3rem 0 1.3rem;text-decoration:none}.article-link h2{margin:0 0 .8rem;font-family:var(--sans);font-weight:800;font-size:clamp(1.5rem,3.2vw,2.3rem)}.article-link p{margin:0;color:#754533;font-size:.84rem}.card-bottom{display:flex;align-items:end;justify-content:space-between;gap:1rem;padding-top:.9rem;border-top:3px dashed #b98861}.card-tags{display:flex;flex-wrap:wrap;gap:.4rem .7rem}.card-tags a{color:#9b3b28;font-family:var(--display);font-size:.57rem;text-decoration:none}.read-link{flex:none;color:var(--hot);font-family:var(--display);font-size:.6rem;text-decoration:none}.empty-state{padding:5rem 1rem;text-align:center}.empty-state span{color:var(--hot);font-family:var(--display);font-size:.65rem}.empty-state h2{margin:1rem 0;font-size:clamp(2rem,5vw,3.6rem)}
-@media(max-width:700px){.archive-head{padding:3.5rem 0 2.5rem}.console-head a,kbd{display:none}.search-box{grid-template-columns:auto 1fr;padding-inline:.8rem}.archive-grid{grid-template-columns:1fr}.archive-grid article{min-height:290px;padding:1.3rem}}
-
+[hidden]{display:none!important}.archive-head{max-width:880px;padding:5.5rem 0 3rem;color:var(--paper)}.archive-head h1{margin:0 0 1rem;color:var(--paper);font-size:clamp(3rem,8vw,6.5rem)}.archive-head p{max-width:650px;color:#d6b69c}.search-console{margin-bottom:3.5rem;overflow:hidden}.console-head,.query-status{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem 1rem;color:#ffbd82;background:#2a1713;border-bottom:3px solid #61352a;font-family:var(--display);font-size:.58rem}.console-head>div{display:flex;align-items:center;gap:.65rem}.console-head a{color:var(--cyan);text-decoration:none}.status-dot{width:8px;height:8px;background:var(--acid);box-shadow:0 0 12px var(--acid);animation:lab-blink 1.2s steps(2) infinite}.search-box{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:1rem;padding:1.1rem 1.3rem;background:#241310;border-bottom:3px solid #623729;color:#ff8954;font-family:var(--display);font-size:.7rem}.search-box input{min-width:0;padding:.6rem;color:#ffd4ad;background:#120a08;border:2px solid #8a442f;outline:0;font-size:1rem}.filter-row{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem;padding:1rem 1.25rem;background:#e2c492}.filter-label{margin-right:.35rem;color:var(--muted);font-family:var(--display);font-size:.58rem}.filter-row :global(.tag-filter){padding:.42rem .65rem;color:#5f3428;background:#efd9b1;border:3px solid #603222;cursor:pointer;font-family:var(--display);font-size:.62rem}.filter-row :global(.tag-filter:hover),.filter-row :global(.tag-filter.active){color:#fff0cf;background:var(--hot);transform:translateY(-2px)}.query-status{border:0}.query-status span:last-child{color:var(--cyan)}
+.archive-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.4rem}.archive-grid :global(article){position:relative;display:flex;min-height:330px;flex-direction:column;padding:1.7rem;color:var(--ink);background:var(--paper);border:4px solid var(--line);box-shadow:inset -7px -7px #d0a472,8px 8px #391c16;transition:.2s}.archive-grid :global(article:hover){transform:translate(-3px,-7px) rotate(.35deg);box-shadow:inset -7px -7px #d0a472,12px 15px #2a1511}.archive-grid :global(.slot){position:absolute;right:16px;top:18px;width:46px;height:8px;background:#401f18}.archive-grid :global(.card-top){display:flex;justify-content:space-between;padding-right:60px;color:#9b3b28;font-family:var(--display);font-size:.57rem}.archive-grid :global(.article-link){display:flex;flex:1;flex-direction:column;justify-content:flex-end;padding:3rem 0 1.3rem;text-decoration:none}.archive-grid :global(h2){margin:0 0 .8rem;font-family:var(--sans);font-weight:800;font-size:clamp(1.5rem,3.2vw,2.3rem)}.archive-grid :global(p){margin:0;color:#754533;font-size:.84rem}.archive-grid :global(.card-bottom){display:flex;align-items:end;justify-content:space-between;gap:1rem;padding-top:.9rem;border-top:3px dashed #b98861}.archive-grid :global(.card-tags){display:flex;flex-wrap:wrap;gap:.4rem .7rem}.archive-grid :global(.card-tags a){color:#9b3b28;font-family:var(--display);font-size:.57rem;text-decoration:none}.archive-grid :global(.read-link){flex:none;color:var(--hot);font-family:var(--display);font-size:.6rem;text-decoration:none}.empty-state{padding:5rem 1rem;text-align:center}
+.archive-return{margin:3rem 0 1.5rem;color:#e2b99e}.article-terminal{overflow:visible}.terminal-bar{display:flex;justify-content:space-between;padding:.7rem 1rem;color:#ffbc79;background:#2a1713;border-bottom:4px solid #623729;font-family:var(--display);font-size:.58rem}.reader-light{color:var(--cyan)}.post-head{padding:clamp(2.5rem,6vw,5rem);padding-bottom:3rem;background:linear-gradient(135deg,#f3dfb8,#dcb886)}.post-meta{display:flex;flex-wrap:wrap;gap:.65rem;margin-bottom:1.2rem;color:var(--hot);font-family:var(--display);font-size:.62rem}.post-meta :global(.post-tags){display:flex;flex-wrap:wrap;gap:.35rem .7rem}.post-meta :global(a){color:#177c76;text-decoration:none}.post-head h1{max-width:900px;font-family:var(--sans);font-weight:800;margin:0 0 1.2rem;font-size:clamp(2.2rem,6vw,4.8rem)}.post-head p{max-width:720px;color:#65402f;font-size:1.06rem}.reading-layout{display:grid;min-width:0;grid-template-columns:minmax(170px,220px) minmax(0,760px);justify-content:center;gap:clamp(2rem,5vw,5rem);align-items:start;padding:clamp(2rem,5vw,4rem)}.toc{position:sticky;top:100px;max-height:calc(100vh - 120px);overflow:auto;padding:1rem;background:#e4c495;border:4px solid var(--line);box-shadow:6px 6px #744631}.toc summary{color:var(--hot);font-family:var(--display);font-size:.75rem;cursor:pointer}.toc nav{display:grid}.toc :global(a){display:grid;grid-template-columns:1.7rem 1fr;gap:.4rem;padding:.45rem;color:#694031;border-left:4px solid transparent;font-size:.7rem;line-height:1.45;text-decoration:none}.toc :global(a.active){color:var(--hot);background:#f7ddb0;border-color:var(--acid)}.toc :global(.depth-3){padding-left:1.1rem}.reading-progress{position:fixed;z-index:100;top:0;left:0;width:100%;height:5px}.reading-progress span{display:block;width:100%;height:100%;background:linear-gradient(90deg,var(--acid),var(--yellow));transform:scaleX(0);transform-origin:left}.related{margin:4rem 0 2rem;padding:2.2rem}.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.related-grid :global(a){display:flex;min-height:190px;flex-direction:column;padding:1.2rem;color:var(--ink);background:var(--paper);border:4px solid var(--line);text-decoration:none}.related-grid :global(strong){margin:auto 0 .6rem}.related-grid :global(span){color:var(--hot);font-family:var(--display);font-size:.55rem}.back-top{position:fixed;right:2rem;bottom:1.5rem;z-index:50;width:44px;height:44px;color:var(--paper);background:var(--acid);border:4px solid #6f2017;opacity:0;pointer-events:none}.back-top.visible{opacity:1;pointer-events:auto}:global(.code-frame){max-width:100%;margin:2rem 0;overflow:hidden;border:4px solid #6f3527;background:#20110f}:global(.code-frame pre){margin:0}:global(.code-bar){display:flex;justify-content:space-between;padding:.55rem .8rem;color:#ff9b62;background:#3b1d17;font-family:var(--display);font-size:.58rem}:global(.code-bar button){color:#fff4d2;background:var(--acid);border:2px solid #8b2c1d;cursor:pointer}
+@media(max-width:900px){.reading-layout{display:block}.toc{position:static;max-height:none;margin-bottom:2rem}}@media(max-width:700px){.archive-head{padding:3.5rem 0 2.5rem}.console-head a,kbd{display:none}.search-box{grid-template-columns:auto 1fr}.archive-grid{grid-template-columns:1fr}.terminal-bar span:last-child{display:none}.post-head{padding:2rem 1.3rem}.reading-layout{padding:1.5rem 1.1rem}.related-grid{grid-template-columns:1fr}}
 </style>
