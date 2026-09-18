@@ -1,4 +1,10 @@
 const elements = {
+  authGate: document.querySelector('#auth-gate'),
+  loginForm: document.querySelector('#login-form'),
+  password: document.querySelector('#studio-password'),
+  authError: document.querySelector('#auth-error'),
+  studioShell: document.querySelector('#studio-shell'),
+  logout: document.querySelector('#logout'),
   form: document.querySelector('#editor-form'),
   heading: document.querySelector('#editor-heading'),
   list: document.querySelector('#post-list'),
@@ -78,11 +84,69 @@ function toast(message, type = 'success') {
 async function api(path, options = {}) {
   const response = await fetch(`/studio-api${path}`, {
     ...options,
-    headers: { Accept: 'application/json', ...(options.headers ?? {}) },
+    headers: { Accept: 'application/json', 'X-Studio-Request': '1', ...(options.headers ?? {}) },
   });
   const body = await response.json().catch(() => null);
+  if (response.status === 401) showLogin('会话已经过期，请重新输入访问密码');
   if (!response.ok) throw new Error(body?.error?.message ?? `请求失败（${response.status}）`);
   return body.data;
+}
+
+function showLogin(message = '') {
+  document.body.classList.remove('auth-pending');
+  document.body.classList.add('auth-locked');
+  elements.authGate.hidden = false;
+  elements.studioShell.inert = true;
+  elements.studioShell.setAttribute('aria-hidden', 'true');
+  elements.authError.textContent = message;
+  window.setTimeout(() => elements.password.focus(), 50);
+}
+
+function showStudio() {
+  document.body.classList.remove('auth-pending', 'auth-locked');
+  elements.authGate.hidden = true;
+  elements.studioShell.inert = false;
+  elements.studioShell.removeAttribute('aria-hidden');
+  elements.authError.textContent = '';
+}
+
+async function login(event) {
+  event.preventDefault();
+  elements.authError.textContent = '';
+  const password = elements.password.value;
+  if (!password) return;
+  try {
+    const response = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Studio-Request': '1' },
+      body: JSON.stringify({ password }),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body?.error?.message ?? '验证失败');
+    elements.password.value = '';
+    showStudio();
+    setEditorMode();
+    setBusy(true, '正在连接 D1 档案库…');
+    await loadPosts();
+    toast('安全会话已建立');
+  } catch (error) {
+    elements.authError.textContent = error.message;
+    elements.password.select();
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function logout() {
+  if (state.dirty && !window.confirm('当前修改尚未发布，确定要退出吗？')) return;
+  try {
+    await fetch('/auth/logout', { method: 'POST', headers: { 'X-Studio-Request': '1' } });
+  } finally {
+    state.posts = [];
+    state.currentSlug = null;
+    elements.list.innerHTML = '<div class="list-placeholder">请先建立安全会话</div>';
+    showLogin('已安全退出');
+  }
 }
 
 function setDirty(dirty) {
@@ -450,6 +514,8 @@ async function uploadImages(files) {
 }
 
 elements.newPost.addEventListener('click', resetEditor);
+elements.loginForm.addEventListener('submit', login);
+elements.logout.addEventListener('click', logout);
 elements.search.addEventListener('input', renderList);
 elements.publish.addEventListener('click', publishPost);
 elements.archive.addEventListener('click', archivePost);
@@ -500,11 +566,18 @@ window.addEventListener('beforeunload', (event) => {
 async function start() {
   setEditorMode();
   try {
-    setBusy(true, '正在连接 D1 档案库…');
+    setBusy(true, '正在验证安全会话…');
+    const statusResponse = await fetch('/auth/status', { headers: { 'X-Studio-Request': '1' } });
+    const status = await statusResponse.json();
+    if (!status?.data?.authenticated) {
+      showLogin();
+      return;
+    }
+    showStudio();
+    elements.loadingText.textContent = '正在连接 D1 档案库…';
     await loadPosts();
   } catch (error) {
-    toast(error.message, 'error');
-    elements.list.innerHTML = '<div class="list-placeholder">档案库连接失败，请稍后刷新</div>';
+    showLogin('暂时无法验证会话，请稍后刷新');
   } finally {
     setBusy(false);
   }

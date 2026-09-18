@@ -1,9 +1,13 @@
+import { handleAuthRoute, hasValidSession, isSameOrigin, type AuthEnv } from './auth';
+
 interface Env {
   ASSETS: Fetcher;
-  API_ORIGIN: string;
+  API: Fetcher;
+  CACHE: KVNamespace;
   SITE_URL: string;
-  STUDIO_ALLOWED_EMAIL: string;
   BLOG_ADMIN_TOKEN: string;
+  STUDIO_PASSWORD: string;
+  SESSION_SIGNING_KEY: string;
 }
 
 const apiRoute = /^\/studio-api\/(posts(?:\/[^/]+(?:\/archive)?)?|assets)$/u;
@@ -28,7 +32,7 @@ async function proxyApi(request: Request, env: Env) {
   if (!env.BLOG_ADMIN_TOKEN) return jsonError(503, '工作台尚未配置后台凭据');
 
   const path = incoming.pathname.replace(/^\/studio-api/u, '/api/v1/admin');
-  const target = new URL(`${path}${incoming.search}`, env.API_ORIGIN);
+  const target = new URL(`${path}${incoming.search}`, 'https://api.internal');
   const headers = new Headers({
     Accept: 'application/json',
     Authorization: `Bearer ${env.BLOG_ADMIN_TOKEN}`,
@@ -38,7 +42,7 @@ async function proxyApi(request: Request, env: Env) {
   if (contentType) headers.set('Content-Type', contentType);
   if (fileName) headers.set('X-File-Name', fileName);
 
-  const upstream = await fetch(target, {
+  const upstream = await env.API.fetch(target, {
     method: request.method,
     headers,
     body: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body,
@@ -67,15 +71,15 @@ function withSecurityHeaders(response: Response) {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    if (!ctx.access) return jsonError(401, 'Cloudflare Access 尚未启用');
-    const identity = await ctx.access.getIdentity();
-    const email = identity?.email?.toLocaleLowerCase('en-US');
-    if (!email || email !== env.STUDIO_ALLOWED_EMAIL.toLocaleLowerCase('en-US')) {
-      return jsonError(403, '当前账号无权访问写作工作台');
-    }
-
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/studio-api/')) return proxyApi(request, env);
+    const authResponse = await handleAuthRoute(request, env as AuthEnv);
+    if (authResponse) return authResponse;
+    if (url.pathname.startsWith('/studio-api/')) {
+      if (request.headers.get('X-Studio-Request') !== '1') return jsonError(403, '缺少工作台请求标记');
+      if (!(await hasValidSession(request, env as AuthEnv))) return jsonError(401, '登录已过期，请重新验证');
+      if (!['GET', 'HEAD'].includes(request.method) && !isSameOrigin(request)) return jsonError(403, '请求来源无效');
+      return proxyApi(request, env);
+    }
     if (request.method !== 'GET' && request.method !== 'HEAD') return jsonError(405, '不支持的请求方法');
     return withSecurityHeaders(await env.ASSETS.fetch(request));
   },

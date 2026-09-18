@@ -9,22 +9,24 @@
     "head_sampling_rate": 1
   },
   "vars": {
-    "API_ORIGIN": "https://yimengweixing-api.yimengweixing-api.workers.dev",
-    "SITE_URL": "https://yimengweixing.pages.dev",
-    "STUDIO_ALLOWED_EMAIL": "373598252@qq.com"
+    "SITE_URL": "https://yimengweixing.pages.dev"
   },
+  "services": [
+    {
+      "binding": "API",
+      "service": "yimengweixing-api"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "d9376685931c41e683c9de8889a77fc3"
+    }
+  ],
   "assets": {
     "directory": "public",
     "binding": "ASSETS",
     "run_worker_first": true,
     "not_found_handling": "single-page-application"
-  },
-  "access": {
-    "dev": {
-      "aud": "yimengweixing-studio-local",
-      "identity": {
-        "email": "373598252@qq.com"
-      }
-    }
   }
 }
