@@ -5,8 +5,10 @@ import type { Bindings } from "../src/bindings";
 
 const baseEnv = {
   ENVIRONMENT: "test",
-  API_VERSION: "0.1.0-test",
+  API_VERSION: "0.2.0-test",
   CORS_ORIGINS: "http://localhost:4321",
+  SITE_URL: "https://example.com",
+  BLOG_ADMIN_TOKEN: "test-token",
 } as Bindings;
 
 describe("API skeleton", () => {
@@ -47,5 +49,21 @@ describe("API skeleton", () => {
 
     expect(allowed.headers.get("access-control-allow-origin")).toBe("http://localhost:4321");
     expect(denied.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("protects every management endpoint with a bearer token", async () => {
+    const response = await app.request(
+      "http://localhost/api/v1/admin/posts",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      },
+      baseEnv,
+    );
+    const body = (await response.json()) as ApiError;
+
+    expect(response.status).toBe(401);
+    expect(body.error.code).toBe("UNAUTHORIZED");
   });
 });

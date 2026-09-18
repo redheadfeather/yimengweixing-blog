@@ -13,7 +13,7 @@ export function ok<T>(c: Context<AppEnv>, data: T, status: 200 | 201 = 200) {
 
 export function fail(
   c: Context<AppEnv>,
-  status: 400 | 404 | 405 | 500 | 503,
+  status: 400 | 401 | 404 | 405 | 409 | 413 | 415 | 422 | 500 | 503,
   code: string,
   message: string,
 ) {

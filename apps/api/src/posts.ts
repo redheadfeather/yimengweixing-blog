@@ -31,6 +31,10 @@ interface TagRow {
 const TAG_SEPARATOR = "\u001f";
 const CACHE_TTL_SECONDS = 300;
 
+async function contentVersion(c: Context<AppEnv>) {
+  return (await c.env.CACHE.get("content:version")) ?? "1";
+}
+
 function mapSummary(row: PostRow): PostSummary {
   return {
     id: row.id,
@@ -113,7 +117,8 @@ export async function listPosts(c: Context<AppEnv>) {
   const query = (c.req.query("q") ?? "").trim().slice(0, 100);
   const tag = (c.req.query("tag") ?? "").trim().slice(0, 100);
   const featuredOnly = c.req.query("featured") === "true";
-  const cacheKey = `v2:posts:list:${limit}:${offset}:${encodeURIComponent(query)}:${encodeURIComponent(tag)}:${featuredOnly}`;
+  const version = await contentVersion(c);
+  const cacheKey = `v3:${version}:posts:list:${limit}:${offset}:${encodeURIComponent(query)}:${encodeURIComponent(tag)}:${featuredOnly}`;
   const cached = await c.env.CACHE.get<ApiSuccess<PostListData>>(cacheKey, "json");
 
   if (cached) {
@@ -157,7 +162,8 @@ export async function listPosts(c: Context<AppEnv>) {
 
 export async function getPost(c: Context<AppEnv>) {
   const slug = c.req.param("slug");
-  const cacheKey = `v2:posts:detail:${slug}`;
+  const version = await contentVersion(c);
+  const cacheKey = `v3:${version}:posts:detail:${slug}`;
   const cached = await c.env.CACHE.get<ApiSuccess<PostDetail>>(cacheKey, "json");
 
   if (cached) {
@@ -215,7 +221,8 @@ export async function getPost(c: Context<AppEnv>) {
 }
 
 export async function listTags(c: Context<AppEnv>) {
-  const cacheKey = "v2:tags:list";
+  const version = await contentVersion(c);
+  const cacheKey = `v3:${version}:tags:list`;
   const cached = await c.env.CACHE.get<ApiSuccess<TagSummary[]>>(cacheKey, "json");
 
   if (cached) {
